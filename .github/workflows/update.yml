@@ -1,10 +1,7 @@
 name: Update CSV
 on:
-  push:
-    branches:
-      master
   schedule:
-    - cron: "0 10 */14 * *"
+    - cron: "0 10 */28 * *"
   workflow_dispatch:
 jobs:
   run:
@@ -14,18 +11,14 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-        # cache: 'pip'
     - name: 🥑 Pip packages
       run: pip install -v beautifulsoup4 validators requests
-    
-    # - name: switching from HTTPS to SSH
-    #   run: git remote set-url origin ${{ secrets.ssh }}
     - name: 🔔 Checkout
       uses: actions/checkout@v2
-    - name: Git Config
+    - name: ⚙️ Git Config
       run: |
-          git config --global user.email "runner@example.com"
-          git config --global user.name "Runner"
+          git config user.email "runner@example.com"
+          git config user.name "Runner"
     - name: 🏃‍♀️ Run script 
       run: python get_spoons.py --no-visited -f -d 1
     #- name: 🧪 Test Run
@@ -37,6 +30,8 @@ jobs:
           touch errors.log;cat errors.log
     - name: ✋ Remove error log
       run: rm -f errors.log
+    - name: ⏰ Update latest
+      run: rm latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
     - name: 🎭 Stage changed files
       run: git add .
     - name: 🐨 Commit changed files
