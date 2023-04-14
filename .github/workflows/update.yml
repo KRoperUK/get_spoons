@@ -1,6 +1,5 @@
 name: Update CSV
 on:
-  push:
   schedule:
     - cron: "0 10 */14 * *"
   workflow_dispatch:
@@ -11,7 +10,7 @@ jobs:
     - name: 🔔 Checkout
       uses: actions/checkout@v2
     - run: |
-          git config --global user.email "you@example.com"
+          git config --global user.email "runner@example.com"
           git config --global user.name "Runner"
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
@@ -20,10 +19,12 @@ jobs:
         # cache: 'pip'
     - name: 🥑 Pip packages
       run: pip install -v beautifulsoup4 validators requests
-    - name: 🧪 Test Run
-      run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
+    #- name: 🧪 Test Run
+    #  run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
     # - name: switching from HTTPS to SSH
     #   run: git remote set-url origin ${{ secrets.ssh }}
+    - name: 🏃‍♀️ Run script 
+      run: python get_spoons.py -f -d 3
     - name: 🏁 Check for changes
       run: git status
     - name: 👀 View error log
@@ -38,6 +39,4 @@ jobs:
       run: git fetch origin master
     - name: 😖 Push code to master
       run: git push origin HEAD:master
-#     - name: 🏃‍♀️ Run script 
-#       run: python get_spoons.py -f
       
