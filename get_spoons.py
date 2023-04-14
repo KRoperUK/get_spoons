@@ -99,7 +99,7 @@ def getPubInfo(link: str):
             return pubData
         except Exception  as e:
             print("[DEBUG - pubInfo - ERROR] Error getting pub info for: " + link + "")
-            return {"error": f"Error getting pub info: {e} {e.args}", "Pub Name": link}
+            return {"error": f"Error getting pub info: {e}", "Pub Name": link}
     else:
         print("[DEBUG - pubInfo - ERROR] Banned link: " + link + "")
         return {"error": "Banned link", "Pub Name": link}
