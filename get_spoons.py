@@ -1,11 +1,10 @@
-import requests, csv
+import requests, csv, sys, argparse
 from time import sleep
 from bs4 import BeautifulSoup
 from validators import url as validURL
 
 from datetime import date
 
-# TODO - Handle errors within getPubInfo better. Maybe wrap each in a try except or something.
 # TODO - Make debug statements only show in verbose mode.
 # TODO - Ensure inputted output file is a CSV file.
 # TODO - Ensure inputted output file works with specific URL.
@@ -15,7 +14,6 @@ from datetime import date
 defaultCSVPath = date.today().strftime("spoons_list_%Y%m%d.csv")
 defaultDelay = 4
 
-import argparse
 p = argparse.ArgumentParser(prog='SpoonScraper',
                     description='This script scrapes the Wetherspoon website for pub data.',
                     epilog='Use --full to scrape all pubs, or -link "<link>" to scrape a specific pub.')
@@ -62,26 +60,37 @@ def getPubInfo(link: str):
 
             pubData = {}
 
-            pubData["pubName"] = soupedResponse.find("h1", {"class": "banner-inner__title"}).text.strip()
+            pubData["Pub Name"] = soupedResponse.find("h1", {"class": "banner-inner__title"}).text.strip()
             pubData["Latitude"] = soupedResponse.find("div", {"id": "map"})["data-location-lat"]
             pubData["Longitude"] = soupedResponse.find("div", {"id": "map"})["data-location-long"]
             pubData["Street"] = soupedResponse.find("span", {"itemprop": "streetAddress"}).text.strip().split("\n")[0][:-1].strip()
             pubData["Locality"] = soupedResponse.find("span", {"itemprop": "addressLocality"}).text.strip()
-            pubData["Region"] = soupedResponse.find("span", {"itemprop": "addressRegion"}).text.strip()
-            pubData["Postcode"] = soupedResponse.find("span", {"itemprop": "postalCode"}).text.strip()
+
+            potentionalRegion = soupedResponse.find("span", {"itemprop": "addressRegion"})
+            if potentionalRegion:
+                pubData["Region"] = potentionalRegion.text.strip()
+            else:
+                pubData["Region"] = pubData["Locality"]
+            
+            potentialPostcode = soupedResponse.find("span", {"itemprop": "postalCode"})
+            if potentialPostcode:
+                pubData["Postcode"] = potentialPostcode.text.strip()
+            else:
+                pubData["Postcode"] = ""
+
             pubData["Telephone"] = soupedResponse.find("a", {"class": "location-block__telephone"}).text.strip()
             pubData["SourceURL"] = link
             pubData["error"] = "None"
 
-            print("[DEBUG - pubInfo - SUCCESS] Got pub info for: " + pubData["pubName"] + "")
+            print("[DEBUG - pubInfo - SUCCESS] Got pub info for: " + pubData["Pub Name"] + "")
 
             return pubData
-        except Exception as e:
+        except IOError  as e:
             print("[DEBUG - pubInfo - ERROR] Error getting pub info for: " + link + "")
-            return {"error": f"Error getting pub info: {e}", "pubName": link}
+            return {"error": f"Error getting pub info: {e}", "Pub Name": link}
     else:
         print("[DEBUG - pubInfo - ERROR] Banned link: " + link + "")
-        return {"error": "Banned link", "pubName": link}
+        return {"error": "Banned link", "Pub Name": link}
 
 def main(**kwargs):
     errors = []
@@ -96,10 +105,10 @@ def main(**kwargs):
             counter = 0
 
             if kwargs["ignoreVisitedCol"]:
-                fieldnames = ["pubName", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL"]  
+                fieldnames = ["Pub Name", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL"]  
             else:
-                fieldnames = ["pubName", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL", "Visited"]
-            writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
+                fieldnames = ["Pub Name", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL", "Visited"]
+            writer = csv.DictWriter(csvFile, fieldnames=fieldnames,quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
 
             for pub in pubs:
@@ -111,9 +120,9 @@ def main(**kwargs):
                     del pubInfo["error"]
                     pubInfo["Visited"] = "N"
                     writer.writerow(pubInfo)
-                    print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["pubName"] + " [" + str(counter+1) + "/" + str(len(pubs)) + "]")
+                    print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["Pub Name"] + " [" + str(counter+1) + "/" + str(len(pubs)) + "]")
                 else:
-                    errors.append(f"- {pubInfo['pubName']}: {pubInfo['error']}")
+                    errors.append(f"- {pubInfo['Pub Name']} : {pubInfo['error']}")
                     print("[DEBUG - writing - ERROR] Passed error: " + pubInfo["error"])
         csvFile.close()
     else:
@@ -122,17 +131,17 @@ def main(**kwargs):
                 print("[SpoonScrape] Scraping specific pub...")
                 pubInfo = getPubInfo(kwargs["specificURL"])
                 if pubInfo["error"] == "None":
-                    with open(pubInfo["pubName"] + date.today().strftime("-%Y-%m-%d.csv"), "w", newline="") as csvFile:
+                    with open(pubInfo["Pub Name"] + date.today().strftime("-%Y-%m-%d.csv"), "w", newline="") as csvFile:
                         if kwargs["ignoreVisitedCol"]:
-                            fieldnames = ["pubName", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL"]  
+                            fieldnames = ["Pub Name", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL"]  
                         else:
                             pubInfo["Visited"] = "N"
-                            fieldnames = ["pubName", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL", "Visited"]
-                        writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
+                            fieldnames = ["Pub Name", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL", "Visited"]
+                        writer = csv.DictWriter(csvFile, fieldnames=fieldnames,quoting=csv.QUOTE_NONNUMERIC)
                         writer.writeheader()
                         del pubInfo["error"]
                         writer.writerow(pubInfo)
-                        print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["pubName"] + "")
+                        print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["Pub Name"] + "")
                     csvFile.close()
                 else:
                     print("[DEBUG - writing - ERROR] Passed error: " + pubInfo["error"])
