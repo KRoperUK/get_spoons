@@ -18,7 +18,7 @@ jobs:
     - name: 🥑 Pip packages
       run: pip install -v beautifulsoup4 validators requests
     - name: 🧪 Test Run
-      run: python get_spoons.py -l "https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwirgfnji6j-AhXVEcAKHVesBgUQFnoECAsQAQ&url=https%3A%2F%2Fwww.jdwetherspoon.com%2Fpubs%2Fall-pubs%2Fengland%2Flondon%2Fthe-moon-under-water-west-end&usg=AOvVaw3uCIBDTOAs5XjoP7MDBsGS"
+      run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
     - name: switching from HTTPS to SSH
       run: git remote set-url origin ${{ secrets.ssh }}
     - name: check for changes
