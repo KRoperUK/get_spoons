@@ -33,7 +33,8 @@ jobs:
     - name: 🏁 Check for changes
       run: git status
     - name: 👀 View error log
-      run: cat errors.log
+      run: |
+          touch errors.log;cat errors.log
     - name: ✋ Remove error log
       run: rm -f errors.log
     - name: 🎭 Stage changed files
