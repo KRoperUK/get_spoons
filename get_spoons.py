@@ -5,7 +5,14 @@ from validators import url as validURL
 
 from datetime import date
 
-defaultCSVPath = date.today().strftime("spoons-%Y-%m-%d.csv")
+# TODO - Make debug statements only show in verbose mode.
+# TODO - Ensure inputted output file is a CSV file.
+# TODO - Ensure inputted output file works with specific URL.
+# TODO - Add repair mode.
+# TODO - Add option to use prexisting CSV file as input + add to banned list.
+
+defaultCSVPath = date.today().strftime("spoons_list_%Y%m%d.csv")
+defaultDelay = 4
 
 import argparse
 p = argparse.ArgumentParser(prog='SpoonScraper',
@@ -14,10 +21,11 @@ p = argparse.ArgumentParser(prog='SpoonScraper',
 p.add_argument('-f','--full', help="Access every pub.",dest='allPubs', action='store_true', default=False)
 p.add_argument('-l','--link', help="Pass in a specific pub URL.", dest='specificURL', metavar="URL", default="")
 p.add_argument('-o', '--output', help="Output to a specific file.", dest='outputDest', metavar="OUTPUT_FILE", default=defaultCSVPath)
-p.add_argument('-v', '--no-visited', help="Choose to not store visited column (Default for column is \"N\")", action="store_true",dest='ignoreVisitedCol', default=False)
-p.add_argument('-d', '--delay', help="Length of delay per request. Default is 5 seconds.", metavar="DELAY_LENGTH", type=int,dest='delay', default=5)
+p.add_argument('-d', '--delay', help=f"Length of delay per request. Default is {defaultDelay} seconds.", metavar="DELAY_LENGTH", type=int,dest='delay', default=defaultDelay)
+p.add_argument('--no-visited', help="Choose to not store visited column (Default for column is \"N\")", action="store_true",dest='ignoreVisitedCol', default=False)
+# TODO: Add verbose mode
 
-prefixes: list = ["/pubs/","/hotels/"]
+prefixes: list = ["/pubs/"]
 
 bannedLinks: list = ["https://www.jdwetherspoon.com/pubs/all-pubs",
                      "https://www.jdwetherspoon.com/pubs/all-pubs?searchterm={{ pubSearchTerm }}",]
@@ -69,19 +77,19 @@ def getPubInfo(link: str):
             return pubData
         except:
             print("[DEBUG - pubInfo - ERROR] Error getting pub info for: " + link + "")
-            return {"error": "Error getting pub info"}
+            return {"error": "Error getting pub info", "pubName": link}
     else:
         print("[DEBUG - pubInfo - ERROR] Banned link: " + link + "")
-        return {"error": "Banned link"}
+        return {"error": "Banned link", "pubName": link}
 
 def main(**kwargs):
+    errors = []
 
     if (not kwargs["allPubs"] and kwargs["specificURL"] == ""):
         print("[SpoonScrape] Error: No arguments passed. Use -h for help.")
     elif kwargs["allPubs"]:
         print("[SpoonScrape] Scraping all pubs...")
         with open(kwargs["outputDest"], "w", newline="") as csvFile:
-            errors = []
             pubs = getPubs(allPubs)
             counter = 0
 
@@ -126,10 +134,15 @@ def main(**kwargs):
                     print("[DEBUG - writing - ERROR] Passed error: " + pubInfo["error"])
             else:
                 print("[SpoonScrape] Error: Invalid URL")
+    csvFile.close()
+
     print("[SpoonScrape] Finished with the following errors:")
     for error in errors:
         print(error)
-    csvFile.close()
+    with open("errors.log", "w") as errorFile:
+        for error in errors:
+            errorFile.write(error + "\n")
+    errorFile.close()
     return None
 
 if __name__ == "__main__":
