@@ -20,16 +20,16 @@ jobs:
     
     # - name: switching from HTTPS to SSH
     #   run: git remote set-url origin ${{ secrets.ssh }}
-    #- name: 🏃‍♀️ Run script 
-    #  run: python get_spoons.py -f -d 1
+    - name: 🏃‍♀️ Run script 
+      run: python get_spoons.py -f -d 1
     - name: 🔔 Checkout
       uses: actions/checkout@v2
     - name: Git Config
       run: |
           git config --global user.email "runner@example.com"
           git config --global user.name "Runner"
-    - name: 🧪 Test Run
-      run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
+    #- name: 🧪 Test Run
+    #  run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
     - name: 🏁 Check for changes
       run: git status
     - name: 👀 View error log
