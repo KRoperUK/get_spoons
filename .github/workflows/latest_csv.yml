@@ -18,7 +18,7 @@ jobs:
       - name: 🏁 Check for changes
         run: git status
       - name: ⏰ Update latest
-        run: rm latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
+        run: rm -f latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
       - name: 🎭 Stage changed files
         run: git add .
       - name: 🐨 Commit changed files
