@@ -26,7 +26,7 @@ jobs:
     - name: 👀 View error log
       run: cat errors.log
     - name: ✋ Remove error log
-      run: git rm errors.log
+      run: git rm -f errors.log
     - name: 🎭 Stage changed files
       run: git add .
     - name: 🐨 Commit changed files
