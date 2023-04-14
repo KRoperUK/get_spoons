@@ -30,8 +30,8 @@ jobs:
           touch errors.log;cat errors.log
     - name: ✋ Remove error log
       run: rm -f errors.log
-    - name: ⏰ Update latest
-      run: rm latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
+    # - name: ⏰ Update latest
+    #   run: rm latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
     - name: 🎭 Stage changed files
       run: git add .
     - name: 🐨 Commit changed files

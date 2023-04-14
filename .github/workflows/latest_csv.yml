@@ -1,0 +1,25 @@
+name: Update latest_list
+on:
+  workflow_run:
+      workflows: ["Update CSV"]
+      types:
+        - completed
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔔 Checkout
+          uses: actions/checkout@v2
+      - name: 🏁 Check for changes
+        run: git status
+      - name: ⏰ Update latest
+        run: rm latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
+      - name: 🎭 Stage changed files
+        run: git add .
+      - name: 🐨 Commit changed files
+        run: git commit -m "Updated latest csv."
+      - name: 🤟 Fetch from master
+        run: git fetch origin master
+      - name: 😖 Push code to master
+        run: git push origin HEAD:master
