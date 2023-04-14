@@ -126,14 +126,17 @@ def main(**kwargs):
             for pub in pubs:
                 
                 counter += 1
-                sleep(kwargs["delay"] / 2) 
+                if kwargs["delay"] > 0:
+                    sleep(kwargs["delay"] / 2) 
+                else:
+                    sleep(kwargs["delay"])
                 pubInfo = getPubInfo(pub)
                 if pubInfo["error"] == "None":
                     del pubInfo["error"]
 
                     if not kwargs["ignoreVisitedCol"]:
                         pubInfo["Visited"] = "N"
-                        
+
                     writer.writerow(pubInfo)
                     print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["Pub Name"] + " [" + str(counter+1) + "/" + str(len(pubs)) + "]")
                 else:
