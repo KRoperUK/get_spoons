@@ -1,0 +1,35 @@
+name: Update CSV
+on:
+  schedule:
+    - cron: "0 10 */14 * *"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🔔 Checkout
+      uses: actions/checkout@v2
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    - name: 🥑 Pip packages
+      run: pip install -v beautifulsoup4 validators
+    - name: 🧪 Test Run
+      run: python get_spoons.py -l "https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwirgfnji6j-AhXVEcAKHVesBgUQFnoECAsQAQ&url=https%3A%2F%2Fwww.jdwetherspoon.com%2Fpubs%2Fall-pubs%2Fengland%2Flondon%2Fthe-moon-under-water-west-end&usg=AOvVaw3uCIBDTOAs5XjoP7MDBsGS"
+    - name: switching from HTTPS to SSH
+      run: git remote set-url origin ${{ secrets.ssh }}
+    - name: check for changes
+      run: git status
+    - name: stage changed files
+      run: git add .
+    - name: commit changed files
+      run: git commit -m "Added new CSV."
+    - name: fetch from master
+      run: git fetch origin master
+    - name: push code to master
+      run: git push origin HEAD:master
+#     - name: 🏃‍♀️ Run script 
+#       run: python get_spoons.py -f
+      
