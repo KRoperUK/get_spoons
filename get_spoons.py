@@ -87,6 +87,7 @@ def main(**kwargs):
 
     if (not kwargs["allPubs"] and kwargs["specificURL"] == ""):
         print("[SpoonScrape] Error: No arguments passed. Use -h for help.")
+        return None
     elif kwargs["allPubs"]:
         print("[SpoonScrape] Scraping all pubs...")
         with open(kwargs["outputDest"], "w", newline="") as csvFile:
