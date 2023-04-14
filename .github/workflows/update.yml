@@ -10,7 +10,9 @@ jobs:
     steps:
     - name: 🔔 Checkout
       uses: actions/checkout@v2
-      
+    - run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Runner"
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
