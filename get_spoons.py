@@ -105,7 +105,7 @@ def main(**kwargs):
             for pub in pubs:
                 
                 counter += 1
-                sleep(kwargs["delay"]) 
+                sleep(kwargs["delay"] / 2) 
                 pubInfo = getPubInfo(pub)
                 if pubInfo["error"] == "None":
                     del pubInfo["error"]
