@@ -61,10 +61,17 @@ def getPubInfo(link: str):
             pubData = {}
 
             pubData["Pub Name"] = soupedResponse.find("h1", {"class": "banner-inner__title"}).text.strip()
+
             pubData["Latitude"] = soupedResponse.find("div", {"id": "map"})["data-location-lat"]
             pubData["Longitude"] = soupedResponse.find("div", {"id": "map"})["data-location-long"]
+
             pubData["Street"] = soupedResponse.find("span", {"itemprop": "streetAddress"}).text.strip().split("\n")[0][:-1].strip()
-            pubData["Locality"] = soupedResponse.find("span", {"itemprop": "addressLocality"}).text.strip()
+
+            potentialLocality = soupedResponse.find("span", {"itemprop": "addressLocality"})
+            if potentialLocality:
+                pubData["Locality"] = potentialLocality.text.strip()
+            else:
+                pubData["Locality"] = ""
 
             potentionalRegion = soupedResponse.find("span", {"itemprop": "addressRegion"})
             if potentionalRegion:
@@ -78,7 +85,12 @@ def getPubInfo(link: str):
             else:
                 pubData["Postcode"] = ""
 
-            pubData["Telephone"] = soupedResponse.find("a", {"class": "location-block__telephone"}).text.strip()
+            potentialTelephone = soupedResponse.find("a", {"class": "location-block__telephone"})
+            if potentialTelephone:
+                pubData["Telephone"] = potentialTelephone.text.strip()
+            else:
+                pubData["Telephone"] = ""
+
             pubData["SourceURL"] = link
             pubData["error"] = "None"
 
