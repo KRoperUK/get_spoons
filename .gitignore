@@ -7,6 +7,7 @@
 *.pm.tdy
 *.bs
 .DS_STORE
+errors.log
 
 # Devel::Cover
 cover_db/

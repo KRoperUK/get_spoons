@@ -5,6 +5,7 @@ from validators import url as validURL
 
 from datetime import date
 
+# TODO - Handle errors within getPubInfo better. Maybe wrap each in a try except or something.
 # TODO - Make debug statements only show in verbose mode.
 # TODO - Ensure inputted output file is a CSV file.
 # TODO - Ensure inputted output file works with specific URL.
@@ -75,9 +76,9 @@ def getPubInfo(link: str):
             print("[DEBUG - pubInfo - SUCCESS] Got pub info for: " + pubData["pubName"] + "")
 
             return pubData
-        except:
+        except Exception as e:
             print("[DEBUG - pubInfo - ERROR] Error getting pub info for: " + link + "")
-            return {"error": "Error getting pub info", "pubName": link}
+            return {"error": f"Error getting pub info: {e}", "pubName": link}
     else:
         print("[DEBUG - pubInfo - ERROR] Banned link: " + link + "")
         return {"error": "Banned link", "pubName": link}
@@ -114,6 +115,7 @@ def main(**kwargs):
                 else:
                     errors.append(f"- {pubInfo['pubName']}: {pubInfo['error']}")
                     print("[DEBUG - writing - ERROR] Passed error: " + pubInfo["error"])
+        csvFile.close()
     else:
         if kwargs["specificURL"]:
             if validURL(kwargs["specificURL"]):
@@ -131,19 +133,20 @@ def main(**kwargs):
                         del pubInfo["error"]
                         writer.writerow(pubInfo)
                         print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["pubName"] + "")
+                    csvFile.close()
                 else:
                     print("[DEBUG - writing - ERROR] Passed error: " + pubInfo["error"])
             else:
                 print("[SpoonScrape] Error: Invalid URL")
-    csvFile.close()
 
-    print("[SpoonScrape] Finished with the following errors:")
-    for error in errors:
-        print(error)
-    with open("errors.log", "w") as errorFile:
+    if len(errors) > 0:
+        with open("errors.log", "w") as errorFile:
+            for error in errors:
+                errorFile.write(error + "\n")
+        errorFile.close()
+        print("[SpoonScrape] Finished with the following errors:")
         for error in errors:
-            errorFile.write(error + "\n")
-    errorFile.close()
+            print(error)
     return None
 
 if __name__ == "__main__":
