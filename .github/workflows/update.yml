@@ -26,7 +26,7 @@ jobs:
     # - name: switching from HTTPS to SSH
     #   run: git remote set-url origin ${{ secrets.ssh }}
     - name: 🏃‍♀️ Run script 
-      run: python get_spoons.py -f -d 3
+      run: python get_spoons.py -f -d 1
     - name: 🏁 Check for changes
       run: git status
     - name: 👀 View error log
@@ -39,6 +39,8 @@ jobs:
       run: git commit -m "Added new CSV."
     - name: 🤟 Fetch from master
       run: git fetch origin master
+    - name: Pull time
+      run: git pull --rebase
     - name: 😖 Push code to master
       run: git push origin HEAD:master
       
