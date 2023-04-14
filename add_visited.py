@@ -17,7 +17,7 @@ def add_visited(csvFile):
         return False
     try:
         with open(csvFile, "w") as g:  
-            writer = csv.writer(g)
+            writer = csv.writer(g,quoting=csv.QUOTE_NONNUMERIC)
             writer.writerows(data)
         print("[Add Visited] Added visited column to " + csvFile + " successfully.")
         return True
