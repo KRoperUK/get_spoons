@@ -21,15 +21,19 @@ jobs:
       run: python get_spoons.py -l "https://www.jdwetherspoon.com/pubs/all-pubs/england/london/the-moon-under-water-west-end"
     # - name: switching from HTTPS to SSH
     #   run: git remote set-url origin ${{ secrets.ssh }}
-    - name: check for changes
+    - name: 🏁 Check for changes
       run: git status
-    - name: stage changed files
+    - name: 👀 View error log
+      run: cat errors.log
+    - name: ✋ Remove error log
+      run: git rm errors.log
+    - name: 🎭 Stage changed files
       run: git add .
-    - name: commit changed files
+    - name: 🐨 Commit changed files
       run: git commit -m "Added new CSV."
-    - name: fetch from master
+    - name: 🤟 Fetch from master
       run: git fetch origin master
-    - name: push code to master
+    - name: 😖 Push code to master
       run: git push origin HEAD:master
 #     - name: 🏃‍♀️ Run script 
 #       run: python get_spoons.py -f
