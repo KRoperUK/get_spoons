@@ -17,8 +17,8 @@ jobs:
       uses: actions/checkout@v2
     - name: ⚙️ Git Config
       run: |
-          git config user.email "runner@example.com"
-          git config user.name "Runner"
+          git config user.email "<>"
+          git config user.name "🤖 Github Actions - Update CSV"
     - name: 🏃‍♀️ Run script 
       run: python get_spoons.py --no-visited -f -d 1
     #- name: 🧪 Test Run

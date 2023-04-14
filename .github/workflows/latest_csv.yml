@@ -11,6 +11,10 @@ jobs:
     steps:
       - name: 🔔 Checkout
         uses: actions/checkout@v2
+      - name: ⚙️ Git Config
+        run: |
+            git config user.email "<>"
+            git config user.name "🤖 Github Actions - Update latest_list"
       - name: 🏁 Check for changes
         run: git status
       - name: ⏰ Update latest
