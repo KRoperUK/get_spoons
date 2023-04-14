@@ -130,7 +130,10 @@ def main(**kwargs):
                 pubInfo = getPubInfo(pub)
                 if pubInfo["error"] == "None":
                     del pubInfo["error"]
-                    pubInfo["Visited"] = "N"
+
+                    if not kwargs["ignoreVisitedCol"]:
+                        pubInfo["Visited"] = "N"
+                        
                     writer.writerow(pubInfo)
                     print("[DEBUG - writing - SUCCESS] Wrote pub info for: " + pubInfo["Pub Name"] + " [" + str(counter+1) + "/" + str(len(pubs)) + "]")
                 else:
