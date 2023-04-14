@@ -1,7 +1,7 @@
 name: Update CSV
 on:
   schedule:
-    - cron: "0 10 */28 * *"
+    - cron: "0 6 */28 * *"
   workflow_dispatch:
 jobs:
   run:
