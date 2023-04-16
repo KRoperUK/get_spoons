@@ -16,7 +16,7 @@ jobs:
             git config user.email "<>"
             git config user.name "🤖 Github Actions - Update latest_list"
       - name: ⏰ Update latest
-        run: rm -f latest_list.csv; find spoons* | sort -r | head -n 1  >> latest_list.csv
+        run: rm -f latest_list.csv; find spoons* | sort -r | head -n 1 | xargs -I {} ln -s {} latest_list.csv
       - name: 🏁 Check for changes
         run: git status
       - name: 🎭 Stage changed files
