@@ -19,3 +19,7 @@ Made by [KRoperUK](https://github.com/KRoperUK). Use as ```python add_visited.py
 ## Actions
 
 Added by [KRoperUK](https://github.com/KRoperUK). A new spoons list will be automatically generated every 28 days using the ["Update CSV"](./.github/workflows/update.yml) workflow. It will then trigger a ["Update latest list"](./.github/workflows/latest_csv.yml) workflow to update [latest_list.csv](./latest_list.csv).
+
+## Web Preview
+
+View the latest .csv of data at: [kroper.uk/get_spoons](https://kroper.uk/get_spoons)
