@@ -22,4 +22,4 @@ Added by [KRoperUK](https://github.com/KRoperUK). A new spoons list will be auto
 
 ## Web Preview
 
-View the latest .csv of data at: [kroper.uk/get_spoons](https://kroper.uk/get_spoons)
+View the latest .csv of data at: [kroper.live/get_spoons](https://kroper.live/get_spoons)
