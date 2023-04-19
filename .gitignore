@@ -8,6 +8,7 @@
 *.bs
 .DS_STORE
 errors.log
+/web/_site/
 
 # Devel::Cover
 cover_db/
