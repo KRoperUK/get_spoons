@@ -101,10 +101,10 @@
                 //     type:         'image',
                 //     url:          spoonsLogo,
                 // })
-                map.loadImage(spoonsLogo, (error, image) => {
-                    if (error) throw error;
-                    map.addImage("spoonsLogoImg", image);
-                });
+                // map.loadImage(spoonsLogo, (error, image) => {
+                //     if (error) throw error;
+                //     map.addImage("spoonsLogoImg", image);
+                // });
                 // Add a layer showing the places.
 
             });
@@ -138,13 +138,14 @@
                             
                             pubObjects.push(pubObj);
 
-                            var el = document.createElement('div');
+                            var el = document.createElement('img');
                             el.className = 'marker';
                             // el.style.backgroundColour = 'red';
                             el.style.width = '32px';
                             el.style.height = '32px';
                             // el.style.zIndex = '1000';
-                            el.style.backgroundImage = 'url(' + spoonsLogo + ')';
+                            // el.style.backgroundImage = 'url(' + spoonsLogo + ')';
+                            el.src = spoonsLogo;
                             el.style.backgroundSize = '32px 32px';
                             el.style.borderRadius = '50%';
                             
