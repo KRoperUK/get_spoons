@@ -9,6 +9,7 @@
 .DS_STORE
 errors.log
 /web/_site/
+/web/.jekyll-cache/
 
 # Devel::Cover
 cover_db/
