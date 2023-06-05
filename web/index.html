@@ -93,6 +93,8 @@
                     fitBoundsOptions: {maxZoom: 13},
                 }), "top-left"
             );
+            
+            map.addControl(new maplibregl.FullscreenControl());
 
             map.on("load", () => {
                 // Add the tree cluster image
