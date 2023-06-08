@@ -143,7 +143,9 @@
                             
 
                             var popup = new maplibregl.Popup({ offset: 25 }).setHTML(
-                                `<center><a style="text-decoration: none;" href="${pub["SourceURL"]}"><b>${pub["Pub Name"]}</b></a> <br> ${pub["Locality"]}</center>`
+                                `<center><a style="text-decoration: none;" href="${pub["SourceURL"]}"><b>${pub["Pub Name"]}</b></a>
+                                 <a style="text-decoration: none;" href="https://www.google.com/maps/dir/?api=1&destination=${pub.Latitude}%2C${pub.Longitude}">🗺️</a>
+                                 <br> ${pub["Locality"]}</center>`
                                 );
 
                             var marker = new maplibregl.Marker(el)
