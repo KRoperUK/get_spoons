@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/psf/black
+    rev: 25.12.0
+    hooks:
+      - id: black
+        name: black (python formatter)
+        language_version: python3
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+        name: isort (import sorting)
+        language_version: python3
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.14.10
+    hooks:
+      - id: ruff
+        name: ruff (python linter)
+        language_version: python3
+
+  - repo: https://github.com/djlint/djlint
+    rev: v1.36.4
+    hooks:
+      - id: djlint
+        name: djlint - HTML linter
+        args: ["--profile=none"]
+        files: "^web/.*\\.html$"
+        stages: [commit]
+
+# Note: Prettier (mirrors-prettier) was removed due to nodeenv failures on this system.
+# To enable pre-commit locally: `python3 -m pip install --upgrade pip pre-commit` then `pre-commit install`.
