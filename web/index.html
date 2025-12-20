@@ -20,8 +20,12 @@
         <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
         <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet' />
         <style>
-            .wide-card { width: 120vw; }
-            .map-container, #map { width: 100%; height: 65vh; }
+            /* Keep the card within the viewport */
+            .wide-card { width: 100%; max-width: 100%; margin: 0 auto; }
+
+            /* Ensure the map container has an explicit height and a visible background for debugging */
+            .map-container, #map { width: 100%; min-height: 65vh; height: 65vh; background: #eef; }
+
             .marker { width: 32px; height: 32px; background-size: 32px 32px; border-radius: 50%; }
             .link-no-decor { text-decoration: none; }
             .link-dark { color: black; }
@@ -81,7 +85,8 @@
             map.addControl(new maplibregl.FullscreenControl());
 
             map.on("load", () => {
-
+                // ensure the map resizes to its container dimensions
+                try { map.resize(); } catch (e) { console.warn('map resize failed', e); }
             });
 
 
