@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.0.0...get_spoons-v1.0.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* **go-module:** update module path to include full github repository path ([#7](https://github.com/KRoperUK/get_spoons/issues/7)) ([460722b](https://github.com/KRoperUK/get_spoons/commit/460722b796a12fd44075bbe6857a1abf35a91407))
+
 ## 1.0.0 (2026-02-15)
 
 
