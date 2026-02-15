@@ -43,6 +43,51 @@
     }
   </style>
 </head>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description"
+    content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
+  <meta name="keywords" content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv">
+  <title>Wetherspoons map — get_spoons</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    #map {
+      height: 100vh;
+    }
+
+    .attribution {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .loading {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
 
 <body>
   <div id="map"></div>
@@ -51,8 +96,8 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <!-- PapaParse for CSV parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <!-- Baked Data -->
+  <script src="data.js"></script>
 
   <script>
     const initMap = () => {
@@ -64,30 +109,37 @@
       return map;
     };
 
-    const processFile = (rows, map) => {
+    const processData = (venues, map) => {
       const loadingEl = document.getElementById('loading');
-      loadingEl.textContent = `Placing ${rows.length} markers…`;
+      if (!venues) {
+        loadingEl.textContent = 'No data found.';
+        return;
+      }
+      loadingEl.textContent = `Placing ${venues.length} markers…`;
 
       const group = L.featureGroup();
 
-      rows.forEach(row => {
-        const lat = parseFloat(row['Latitude']);
-        const lon = parseFloat(row['Longitude']);
+      venues.forEach(venue => {
+        const lat = venue.address.location.latitude;
+        const lon = venue.address.location.longitude;
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
-        const title = row['Pub Name'] || 'Wetherspoons';
+        const title = venue.name || 'Wetherspoons';
+        const address = venue.address;
         const lines = [];
-        if (row['Street']) lines.push(row['Street']);
-        if (row['Locality']) lines.push(row['Locality']);
-        if (row['Region']) lines.push(row['Region']);
-        if (row['Postcode']) lines.push(row['Postcode']);
+        if (address.line1) lines.push(address.line1);
+        if (address.line2) lines.push(address.line2);
+        if (address.town) lines.push(address.town);
+        if (address.postcode) lines.push(address.postcode);
 
-        const popup = `
+        let popup = `
           <strong>${title}</strong><br/>
           ${lines.join(', ')}<br/>
-          ${row['Telephone'] ? `<small>${row['Telephone']}</small><br/>` : ''}
-          ${row['SourceURL'] ? `<a href="${row['SourceURL']}" target="_blank" rel="noopener">Details</a>` : ''}
         `;
+        
+        if (venue.menus && venue.menus.length > 0) {
+            popup += `<br/><strong>Menus available:</strong> ${venue.menus.length}`;
+        }
 
         const marker = L.circleMarker([lat, lon], {
           radius: 5,
@@ -107,35 +159,13 @@
       loadingEl.style.display = 'none';
     };
 
-    const downloadCSV = async (map) => {
-      try {
-        const base = 'https://raw.githubusercontent.com/KRoperUK/get_spoons/master/';
-        const latestText = await fetch(base + 'latest_list.csv').then(res => res.text());
-        const target = latestText.split('\n').map(s => s.trim()).find(Boolean);
-        if (!target) throw new Error('Could not read latest_list.csv');
-        const csvUrl = base + target;
-
-        Papa.parse(csvUrl, {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          complete: function (results) {
-            processFile(results.data, map);
-          },
-          error: function (err) {
-            console.error('PapaParse error', err);
-            document.getElementById('loading').textContent = 'Error loading CSV';
-          }
-        });
-      } catch (err) {
-        console.error('Failed to download CSV', err);
-        document.getElementById('loading').textContent = 'Failed to download CSV';
-      }
-    };
-
     document.addEventListener('DOMContentLoaded', () => {
       const map = initMap();
-      downloadCSV(map);
+      if (window.SPOONS_DATA) {
+        processData(window.SPOONS_DATA, map);
+      } else {
+        document.getElementById('loading').textContent = 'Error: Data not loaded (window.SPOONS_DATA missing)';
+      }
     });
   </script>
 </body>

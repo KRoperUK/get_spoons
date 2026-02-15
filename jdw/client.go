@@ -16,6 +16,34 @@ type Client struct {
 	appVersion string
 	token      string
 	userAgent  string
+	debug      bool
+}
+
+// SetDebug enables or disables debug logging for the client.
+func (c *Client) SetDebug(debug bool) {
+	c.debug = debug
+}
+
+// GetVenueDetails fetches the full details for a specific venue by ID and returns it as a raw map.
+// This is useful for retrieving fields that are not defined in the Venue struct.
+func (c *Client) GetVenueDetails(id int) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := c.doRequest("GET", fmt.Sprintf("/api/v0.1/jdw/venues/%d", id), nil, &result)
+	return result, err
+}
+
+// GetMenus fetches the menus for a specific venue and sales area.
+func (c *Client) GetMenus(venueID, salesAreaID int) ([]interface{}, error) {
+	var result []interface{}
+	err := c.doRequest("GET", fmt.Sprintf("/api/v0.1/jdw/venues/%d/sales-areas/%d/menus", venueID, salesAreaID), nil, &result)
+	return result, err
+}
+
+// GetMenuItems fetches the details (items, sections) for a specific menu.
+func (c *Client) GetMenuItems(venueID, salesAreaID, menuID int) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := c.doRequest("GET", fmt.Sprintf("/api/v0.1/jdw/venues/%d/sales-areas/%d/menus/%d", venueID, salesAreaID, menuID), nil, &result)
+	return result, err
 }
 
 // NewClient creates a new JDW API client.
@@ -33,6 +61,10 @@ func (c *Client) doRequest(method, path string, body io.Reader, result any) (err
 	req, err := http.NewRequest(method, c.baseURL+path, body)
 	if err != nil {
 		return err
+	}
+
+	if c.debug {
+		fmt.Printf("DEBUG: %s %s\n", method, c.baseURL+path)
 	}
 
 	req.Header.Set("App-Version", c.appVersion)

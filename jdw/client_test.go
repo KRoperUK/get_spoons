@@ -121,3 +121,37 @@ func TestGetBanners(t *testing.T) {
 		t.Errorf("Expected campaign 'Test Campaign', got '%s'", banners[0].Campaign)
 	}
 }
+
+func TestGetVenueDetails(t *testing.T) {
+	mockResponse := `{
+		"success": true,
+		"data": {
+			"id": 123,
+			"name": "Detailed Venue",
+			"extraField": "extraValue"
+		}
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := fmt.Fprint(w, mockResponse); err != nil {
+			t.Errorf("failed to write mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient("1.2.3", "test-token", "test-ua")
+	client.baseURL = server.URL
+	details, err := client.GetVenueDetails(123)
+	if err != nil {
+		t.Fatalf("GetVenueDetails failed: %v", err)
+	}
+
+	if name, ok := details["name"].(string); !ok || name != "Detailed Venue" {
+		t.Errorf("Expected name 'Detailed Venue', got '%v'", details["name"])
+	}
+
+	if extra, ok := details["extraField"].(string); !ok || extra != "extraValue" {
+		t.Errorf("Expected extraField 'extraValue', got '%v'", details["extraField"])
+	}
+}
