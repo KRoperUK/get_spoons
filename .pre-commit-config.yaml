@@ -19,3 +19,13 @@ repos:
     hooks:
       - id: golangci-lint
         args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: go-test
+        name: go test
+        entry: go test ./...
+        language: system
+        types: [go]
+        pass_filenames: false
+        stages: [push]
