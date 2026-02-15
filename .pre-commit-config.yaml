@@ -28,4 +28,5 @@ repos:
         language: system
         types: [go]
         pass_filenames: false
-        stages: [push]
+        always_run: true
+        stages: [pre-push]
