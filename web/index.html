@@ -1,21 +1,49 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
+  <meta name="description"
+    content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
   <meta name="keywords" content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv">
   <title>Wetherspoons map — get_spoons</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    html, body { height: 100%; margin: 0; }
-    #map { height: 100vh; }
-    .attribution { position: absolute; left: 10px; bottom: 10px; background: rgba(255,255,255,0.9); padding:6px 8px; border-radius:4px; font-size:12px; }
-    .loading { position: absolute; right: 10px; bottom: 10px; background: rgba(255,255,255,0.9); padding:6px 8px; border-radius:4px; font-size:12px; }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    #map {
+      height: 100vh;
+    }
+
+    .attribution {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .loading {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
   </style>
 </head>
+
 <body>
   <div id="map"></div>
   <div class="attribution">Wetherspoons locations from the <code>get_spoons</code> dataset</div>
@@ -81,7 +109,7 @@
 
     const downloadCSV = async (map) => {
       try {
-        const base = 'https://raw.githubusercontent.com/andraw/get_spoons/master/';
+        const base = 'https://raw.githubusercontent.com/KRoperUK/get_spoons/master/';
         const latestText = await fetch(base + 'latest_list.csv').then(res => res.text());
         const target = latestText.split('\n').map(s => s.trim()).find(Boolean);
         if (!target) throw new Error('Could not read latest_list.csv');
@@ -91,10 +119,10 @@
           download: true,
           header: true,
           skipEmptyLines: true,
-          complete: function(results) {
+          complete: function (results) {
             processFile(results.data, map);
           },
-          error: function(err) {
+          error: function (err) {
             console.error('PapaParse error', err);
             document.getElementById('loading').textContent = 'Error loading CSV';
           }
@@ -111,4 +139,5 @@
     });
   </script>
 </body>
+
 </html>

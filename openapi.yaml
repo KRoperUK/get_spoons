@@ -1,0 +1,268 @@
+openapi: 3.0.3
+info:
+  title: JDW API
+  description: Unofficial OpenAPI specification for the J.D. Wetherspoon mobile app API.
+  version: 0.1.0
+servers:
+  - url: https://ca.jdw-apps.net
+    description: Production API
+  - url: https://cgn.jdw-auth.net
+    description: Authentication API
+paths:
+  /oauth2/authorize:
+    get:
+      summary: OAuth2 Authorize
+      description: Initial step for OAuth2 flow. Requires identity_provider (Google/SignInWithApple).
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "i1bcum8uvgimofvo4mvptd57o"
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "code"
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "jdwca-auth://login"
+      responses:
+        '302':
+          description: Redirects to IDP login
+  /oauth2/token:
+    post:
+      summary: OAuth2 Token
+      description: Exchanges authorization code for access and refresh tokens.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  example: "authorization_code"
+                code:
+                  type: string
+                client_id:
+                  type: string
+                  example: "i1bcum8uvgimofvo4mvptd57o"
+                code_verifier:
+                  type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  id_token:
+                    type: string
+                  token_type:
+                    type: string
+  /api/v0.1/venues:
+    get:
+      summary: Get all venues
+      description: Returns a comprehensive list of all Wetherspoon venues.
+      parameters:
+        - name: App-Version
+          in: header
+          required: true
+          schema:
+            type: string
+            example: "6.7.1"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenuesResponse'
+  /api/v0.1/jdw/venues/{id}:
+    get:
+      summary: Get venue details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueResponse'
+  /api/v0.1/content/promotional-banners:
+    get:
+      summary: Get promotional banners
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BannersResponse'
+  /api/v0.1/settings:
+    get:
+      summary: Get app settings
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+  /api/v0.1/geocode/location:
+    get:
+      summary: Geocode coordinates to address
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: float
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: float
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      latitude:
+                        type: number
+                      longitude:
+                        type: number
+                      address:
+                        $ref: '#/components/schemas/Address'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    VenuesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Venue'
+    VenueResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Venue'
+    Venue:
+      type: object
+      properties:
+        id:
+          type: integer
+        venueRef:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+        isClosed:
+          type: boolean
+        address:
+          $ref: '#/components/schemas/Address'
+    Address:
+      type: object
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+          nullable: true
+        line3:
+          type: string
+          nullable: true
+        town:
+          type: string
+        county:
+          type: string
+        postcode:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+    Location:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+    SettingsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Settings'
+    Settings:
+      type: object
+      properties:
+        minVersion:
+          type: string
+        urls:
+          type: object
+          additionalProperties:
+            type: string
+        features:
+          type: object
+          additionalProperties: {}
+    BannersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Banner'
+    Banner:
+      type: object
+      properties:
+        campaign:
+          type: string
+        imageUrl:
+          type: string
+        url:
+          type: string
+security:
+  - bearerAuth: []
