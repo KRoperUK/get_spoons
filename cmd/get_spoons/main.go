@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"get_spoons/jdw"
+	"github.com/KRoperUK/get_spoons/jdw"
 )
 
 func main() {
