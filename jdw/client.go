@@ -29,7 +29,7 @@ func NewClient(appVersion, token, userAgent string) *Client {
 	}
 }
 
-func (c *Client) doRequest(method, path string, body io.Reader, result any) error {
+func (c *Client) doRequest(method, path string, body io.Reader, result any) (err error) {
 	req, err := http.NewRequest(method, c.baseURL+path, body)
 	if err != nil {
 		return err
@@ -44,7 +44,11 @@ func (c *Client) doRequest(method, path string, body io.Reader, result any) erro
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("API returned status: %v", resp.Status)

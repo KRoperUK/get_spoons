@@ -34,7 +34,9 @@ func TestGetVenues(t *testing.T) {
 			t.Errorf("Expected App-Version '1.2.3', got '%s'", r.Header.Get("App-Version"))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, mockResponse)
+		if _, err := fmt.Fprint(w, mockResponse); err != nil {
+			t.Errorf("failed to write mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -67,7 +69,9 @@ func TestGetSettings(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, mockResponse)
+		if _, err := fmt.Fprint(w, mockResponse); err != nil {
+			t.Errorf("failed to write mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -96,7 +100,9 @@ func TestGetBanners(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, mockResponse)
+		if _, err := fmt.Fprint(w, mockResponse); err != nil {
+			t.Errorf("failed to write mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 

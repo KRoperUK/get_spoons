@@ -12,12 +12,10 @@ repos:
     rev: v0.5.1
     hooks:
       - id: go-fmt
-      - id: go-vet
-      - id: go-imports
-      # - id: go-mod-tidy # Optional: can be annoying if it changes go.sum slightly
+      # - id: go-mod-tidy # Optional
 
   - repo: https://github.com/golangci/golangci-lint
     rev: v1.64.5
     hooks:
       - id: golangci-lint
-
+        args: [--fix]

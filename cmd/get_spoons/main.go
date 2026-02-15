@@ -41,12 +41,16 @@ func main() {
 	fmt.Println("Done.")
 }
 
-func writeCSV(filename string, venues []jdw.Venue) error {
+func writeCSV(filename string, venues []jdw.Venue) (err error) {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
