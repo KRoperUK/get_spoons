@@ -1,143 +1,195 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK."
+    />
+    <meta
+      name="keywords"
+      content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv"
+    />
+    <title>Wetherspoons map — get_spoons</title>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description"
-    content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
-  <meta name="keywords" content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv">
-  <title>Wetherspoons map — get_spoons</title>
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <style>
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-    }
+      #map {
+        height: 100vh;
+      }
 
-    #map {
-      height: 100vh;
-    }
+      .attribution {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
 
-    .attribution {
-      position: absolute;
-      left: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
+      .loading {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta
+        name="description"
+        content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK."
+      />
+      <meta
+        name="keywords"
+        content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv"
+      />
+      <title>Wetherspoons map — get_spoons</title>
 
-    .loading {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-  </style>
-</head>
+      <!-- Leaflet CSS -->
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+      />
+      <style>
+        html,
+        body {
+          height: 100%;
+          margin: 0;
+        }
 
-<body>
-  <div id="map"></div>
-  <div class="attribution">Wetherspoons locations from the <code>get_spoons</code> dataset</div>
-  <div class="loading" id="loading">Loading data…</div>
+        #map {
+          height: 100vh;
+        }
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <!-- PapaParse for CSV parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+        .attribution {
+          position: absolute;
+          left: 10px;
+          bottom: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 6px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
 
-  <script>
-    const initMap = () => {
-      const map = L.map('map').setView([54.0, -2.0], 6); // UK-centered
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-      return map;
-    };
+        .loading {
+          position: absolute;
+          right: 10px;
+          bottom: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 6px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
+      </style>
+    </head>
 
-    const processFile = (rows, map) => {
-      const loadingEl = document.getElementById('loading');
-      loadingEl.textContent = `Placing ${rows.length} markers…`;
+    <body>
+      <div id="map"></div>
+      <div class="attribution">
+        Wetherspoons locations from the <code>get_spoons</code> dataset
+      </div>
+      <div class="loading" id="loading">Loading data…</div>
 
-      const group = L.featureGroup();
+      <!-- Leaflet JS -->
+      <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        crossorigin=""
+      ></script>
+      <!-- Baked Data -->
+      <script src="data.js"></script>
 
-      rows.forEach(row => {
-        const lat = parseFloat(row['Latitude']);
-        const lon = parseFloat(row['Longitude']);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      <script>
+        const initMap = () => {
+          const map = L.map("map").setView([54.0, -2.0], 6); // UK-centered
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors",
+          }).addTo(map);
+          return map;
+        };
 
-        const title = row['Pub Name'] || 'Wetherspoons';
-        const lines = [];
-        if (row['Street']) lines.push(row['Street']);
-        if (row['Locality']) lines.push(row['Locality']);
-        if (row['Region']) lines.push(row['Region']);
-        if (row['Postcode']) lines.push(row['Postcode']);
+        const processData = (venues, map) => {
+          const loadingEl = document.getElementById("loading");
+          if (!venues) {
+            loadingEl.textContent = "No data found.";
+            return;
+          }
+          loadingEl.textContent = `Placing ${venues.length} markers…`;
 
-        const popup = `
+          const group = L.featureGroup();
+
+          venues.forEach((venue) => {
+            const lat = venue.address.location.latitude;
+            const lon = venue.address.location.longitude;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+            const title = venue.name || "Wetherspoons";
+            const address = venue.address;
+            const lines = [];
+            if (address.line1) lines.push(address.line1);
+            if (address.line2) lines.push(address.line2);
+            if (address.town) lines.push(address.town);
+            if (address.postcode) lines.push(address.postcode);
+
+            let popup = `
           <strong>${title}</strong><br/>
-          ${lines.join(', ')}<br/>
-          ${row['Telephone'] ? `<small>${row['Telephone']}</small><br/>` : ''}
-          ${row['SourceURL'] ? `<a href="${row['SourceURL']}" target="_blank" rel="noopener">Details</a>` : ''}
+          ${lines.join(", ")}<br/>
         `;
 
-        const marker = L.circleMarker([lat, lon], {
-          radius: 5,
-          color: '#d35400',
-          fillColor: '#d35400',
-          fillOpacity: 0.9
-        }).bindPopup(popup);
+            if (venue.menus && venue.menus.length > 0) {
+              popup += `<br/><strong>Menus available:</strong> ${venue.menus.length}`;
+            }
 
-        marker.addTo(group);
-      });
+            const marker = L.circleMarker([lat, lon], {
+              radius: 5,
+              color: "#d35400",
+              fillColor: "#d35400",
+              fillOpacity: 0.9,
+            }).bindPopup(popup);
 
-      group.addTo(map);
-      if (group.getLayers().length) {
-        map.fitBounds(group.getBounds(), { padding: [30, 30] });
-      }
+            marker.addTo(group);
+          });
 
-      loadingEl.style.display = 'none';
-    };
+          group.addTo(map);
+          if (group.getLayers().length) {
+            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+          }
 
-    const downloadCSV = async (map) => {
-      try {
-        const base = 'https://raw.githubusercontent.com/KRoperUK/get_spoons/master/';
-        const latestText = await fetch(base + 'latest_list.csv').then(res => res.text());
-        const target = latestText.split('\n').map(s => s.trim()).find(Boolean);
-        if (!target) throw new Error('Could not read latest_list.csv');
-        const csvUrl = base + target;
+          loadingEl.style.display = "none";
+        };
 
-        Papa.parse(csvUrl, {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          complete: function (results) {
-            processFile(results.data, map);
-          },
-          error: function (err) {
-            console.error('PapaParse error', err);
-            document.getElementById('loading').textContent = 'Error loading CSV';
+        document.addEventListener("DOMContentLoaded", () => {
+          const map = initMap();
+          if (window.SPOONS_DATA) {
+            processData(window.SPOONS_DATA, map);
+          } else {
+            document.getElementById("loading").textContent =
+              "Error: Data not loaded (window.SPOONS_DATA missing)";
           }
         });
-      } catch (err) {
-        console.error('Failed to download CSV', err);
-        document.getElementById('loading').textContent = 'Failed to download CSV';
-      }
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const map = initMap();
-      downloadCSV(map);
-    });
-  </script>
-</body>
-
+      </script>
+    </body>
+  </html>
 </html>

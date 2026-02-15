@@ -33,7 +33,7 @@ paths:
             type: string
             example: "jdwca-auth://login"
       responses:
-        '302':
+        "302":
           description: Redirects to IDP login
   /oauth2/token:
     post:
@@ -56,7 +56,7 @@ paths:
                 code_verifier:
                   type: string
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -83,12 +83,12 @@ paths:
             type: string
             example: "6.7.1"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VenuesResponse'
+                $ref: "#/components/schemas/VenuesResponse"
   /api/v0.1/jdw/venues/{id}:
     get:
       summary: Get venue details
@@ -99,32 +99,32 @@ paths:
           schema:
             type: integer
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VenueResponse'
+                $ref: "#/components/schemas/VenueResponse"
   /api/v0.1/content/promotional-banners:
     get:
       summary: Get promotional banners
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BannersResponse'
+                $ref: "#/components/schemas/BannersResponse"
   /api/v0.1/settings:
     get:
       summary: Get app settings
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SettingsResponse'
+                $ref: "#/components/schemas/SettingsResponse"
   /api/v0.1/geocode/location:
     get:
       summary: Geocode coordinates to address
@@ -142,7 +142,7 @@ paths:
             type: number
             format: float
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -159,7 +159,7 @@ paths:
                       longitude:
                         type: number
                       address:
-                        $ref: '#/components/schemas/Address'
+                        $ref: "#/components/schemas/Address"
 components:
   securitySchemes:
     bearerAuth:
@@ -174,14 +174,14 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Venue'
+            $ref: "#/components/schemas/Venue"
     VenueResponse:
       type: object
       properties:
         success:
           type: boolean
         data:
-          $ref: '#/components/schemas/Venue'
+          $ref: "#/components/schemas/Venue"
     Venue:
       type: object
       properties:
@@ -198,7 +198,7 @@ components:
         isClosed:
           type: boolean
         address:
-          $ref: '#/components/schemas/Address'
+          $ref: "#/components/schemas/Address"
     Address:
       type: object
       properties:
@@ -217,7 +217,7 @@ components:
         postcode:
           type: string
         location:
-          $ref: '#/components/schemas/Location'
+          $ref: "#/components/schemas/Location"
     Location:
       type: object
       properties:
@@ -233,7 +233,7 @@ components:
         success:
           type: boolean
         data:
-          $ref: '#/components/schemas/Settings'
+          $ref: "#/components/schemas/Settings"
     Settings:
       type: object
       properties:
@@ -254,7 +254,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Banner'
+            $ref: "#/components/schemas/Banner"
     Banner:
       type: object
       properties:
