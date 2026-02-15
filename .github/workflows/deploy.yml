@@ -7,7 +7,7 @@ on:
     types: [published]
   # Run weekly on Sunday at 00:00 UTC
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -37,7 +37,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6.2.0
         with:
-          go-version: '1.21'
+          go-version: "1.21"
           check-latest: true
 
       - name: Build
@@ -65,19 +65,19 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           # Upload web directory
-          path: './web'
-        
+          path: "./web"
+
       - name: Upload Data
         uses: actions/upload-artifact@v4
         with:
           # Upload venues.json
-          path: './venues.json'
+          path: "./venues.json"
 
       - name: Upload Expanded Data
         uses: actions/upload-artifact@v4
         with:
           # Upload venues_expanded.json
-          path: './venues_expanded.json'
+          path: "./venues_expanded.json"
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -30,3 +30,5 @@ Thumbs.db
 # Project specific
 latest_list.csv
 get_spoons
+
+node_modules/

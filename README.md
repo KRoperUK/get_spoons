@@ -39,12 +39,14 @@ go install github.com/KRoperUK/get_spoons/cmd/get_spoons@latest
 The CLI tool requires a JDW Bearer Token (captured manually, starting with `1|...`).
 
 **Option 1: Environment Variable (Recommended)**
+
 ```bash
 export JDW_TOKEN="1|..."
 get_spoons --output my_pubs.csv
 ```
 
 **Option 2: Flag**
+
 ```bash
 get_spoons --token "1|..." --output my_pubs.csv
 ```

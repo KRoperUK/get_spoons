@@ -1,173 +1,195 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK."
+    />
+    <meta
+      name="keywords"
+      content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv"
+    />
+    <title>Wetherspoons map — get_spoons</title>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description"
-    content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
-  <meta name="keywords" content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv">
-  <title>Wetherspoons map — get_spoons</title>
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <style>
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-    }
-
-    #map {
-      height: 100vh;
-    }
-
-    .attribution {
-      position: absolute;
-      left: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .loading {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-  </style>
-</head>
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description"
-    content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK.">
-  <meta name="keywords" content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv">
-  <title>Wetherspoons map — get_spoons</title>
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <style>
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-    }
-
-    #map {
-      height: 100vh;
-    }
-
-    .attribution {
-      position: absolute;
-      left: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .loading {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-  </style>
-</head>
-
-<body>
-  <div id="map"></div>
-  <div class="attribution">Wetherspoons locations from the <code>get_spoons</code> dataset</div>
-  <div class="loading" id="loading">Loading data…</div>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <!-- Baked Data -->
-  <script src="data.js"></script>
-
-  <script>
-    const initMap = () => {
-      const map = L.map('map').setView([54.0, -2.0], 6); // UK-centered
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-      return map;
-    };
-
-    const processData = (venues, map) => {
-      const loadingEl = document.getElementById('loading');
-      if (!venues) {
-        loadingEl.textContent = 'No data found.';
-        return;
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
       }
-      loadingEl.textContent = `Placing ${venues.length} markers…`;
 
-      const group = L.featureGroup();
+      #map {
+        height: 100vh;
+      }
 
-      venues.forEach(venue => {
-        const lat = venue.address.location.latitude;
-        const lon = venue.address.location.longitude;
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      .attribution {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
 
-        const title = venue.name || 'Wetherspoons';
-        const address = venue.address;
-        const lines = [];
-        if (address.line1) lines.push(address.line1);
-        if (address.line2) lines.push(address.line2);
-        if (address.town) lines.push(address.town);
-        if (address.postcode) lines.push(address.postcode);
+      .loading {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta
+        name="description"
+        content="Interactive map of Wetherspoons locations generated from the get_spoons dataset. View pub details and locations across the UK."
+      />
+      <meta
+        name="keywords"
+        content="Wetherspoons,map,pubs,UK,locations,get_spoons,openstreetmap,leaflet,csv"
+      />
+      <title>Wetherspoons map — get_spoons</title>
 
-        let popup = `
-          <strong>${title}</strong><br/>
-          ${lines.join(', ')}<br/>
-        `;
-        
-        if (venue.menus && venue.menus.length > 0) {
-            popup += `<br/><strong>Menus available:</strong> ${venue.menus.length}`;
+      <!-- Leaflet CSS -->
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+      />
+      <style>
+        html,
+        body {
+          height: 100%;
+          margin: 0;
         }
 
-        const marker = L.circleMarker([lat, lon], {
-          radius: 5,
-          color: '#d35400',
-          fillColor: '#d35400',
-          fillOpacity: 0.9
-        }).bindPopup(popup);
+        #map {
+          height: 100vh;
+        }
 
-        marker.addTo(group);
-      });
+        .attribution {
+          position: absolute;
+          left: 10px;
+          bottom: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 6px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
 
-      group.addTo(map);
-      if (group.getLayers().length) {
-        map.fitBounds(group.getBounds(), { padding: [30, 30] });
-      }
+        .loading {
+          position: absolute;
+          right: 10px;
+          bottom: 10px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 6px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
+      </style>
+    </head>
 
-      loadingEl.style.display = 'none';
-    };
+    <body>
+      <div id="map"></div>
+      <div class="attribution">
+        Wetherspoons locations from the <code>get_spoons</code> dataset
+      </div>
+      <div class="loading" id="loading">Loading data…</div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const map = initMap();
-      if (window.SPOONS_DATA) {
-        processData(window.SPOONS_DATA, map);
-      } else {
-        document.getElementById('loading').textContent = 'Error: Data not loaded (window.SPOONS_DATA missing)';
-      }
-    });
-  </script>
-</body>
+      <!-- Leaflet JS -->
+      <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        crossorigin=""
+      ></script>
+      <!-- Baked Data -->
+      <script src="data.js"></script>
 
+      <script>
+        const initMap = () => {
+          const map = L.map("map").setView([54.0, -2.0], 6); // UK-centered
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors",
+          }).addTo(map);
+          return map;
+        };
+
+        const processData = (venues, map) => {
+          const loadingEl = document.getElementById("loading");
+          if (!venues) {
+            loadingEl.textContent = "No data found.";
+            return;
+          }
+          loadingEl.textContent = `Placing ${venues.length} markers…`;
+
+          const group = L.featureGroup();
+
+          venues.forEach((venue) => {
+            const lat = venue.address.location.latitude;
+            const lon = venue.address.location.longitude;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+            const title = venue.name || "Wetherspoons";
+            const address = venue.address;
+            const lines = [];
+            if (address.line1) lines.push(address.line1);
+            if (address.line2) lines.push(address.line2);
+            if (address.town) lines.push(address.town);
+            if (address.postcode) lines.push(address.postcode);
+
+            let popup = `
+          <strong>${title}</strong><br/>
+          ${lines.join(", ")}<br/>
+        `;
+
+            if (venue.menus && venue.menus.length > 0) {
+              popup += `<br/><strong>Menus available:</strong> ${venue.menus.length}`;
+            }
+
+            const marker = L.circleMarker([lat, lon], {
+              radius: 5,
+              color: "#d35400",
+              fillColor: "#d35400",
+              fillOpacity: 0.9,
+            }).bindPopup(popup);
+
+            marker.addTo(group);
+          });
+
+          group.addTo(map);
+          if (group.getLayers().length) {
+            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+          }
+
+          loadingEl.style.display = "none";
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const map = initMap();
+          if (window.SPOONS_DATA) {
+            processData(window.SPOONS_DATA, map);
+          } else {
+            document.getElementById("loading").textContent =
+              "Error: Data not loaded (window.SPOONS_DATA missing)";
+          }
+        });
+      </script>
+    </body>
+  </html>
 </html>
