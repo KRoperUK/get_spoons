@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.2.0...get_spoons-v1.3.0) (2026-02-16)
+
+
+### Features
+
+* **publish-data:** add daily data publishing and search functionality ([#15](https://github.com/KRoperUK/get_spoons/issues/15)) ([601f42f](https://github.com/KRoperUK/get_spoons/commit/601f42fa9fb8fed6475ed0a5a10ee6a2a445966d))
+
 ## [1.2.0](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.1.1...get_spoons-v1.2.0) (2026-02-16)
 
 
