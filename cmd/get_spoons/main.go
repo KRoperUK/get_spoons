@@ -15,6 +15,7 @@ import (
 
 	"github.com/KRoperUK/get_spoons/jdw"
 	"github.com/lithammer/fuzzysearch/fuzzy"
+	"gopkg.in/yaml.v3"
 )
 
 var Version = "v0.0.0"
@@ -32,6 +33,7 @@ func Run(args []string) error {
 	version := fs.Bool("version", false, "Print version and exit")
 	outputFile := fs.String("output", "", "Output file path (default: stdout)")
 	csvOutput := fs.Bool("csv", false, "Output as CSV")
+	yamlOutput := fs.Bool("yaml", false, "Output as YAML")
 	expand := fs.Bool("expand", false, "Expand venue details (only valid with -json)")
 	appVersion := fs.String("app-version", getEnv("JDW_APP_VERSION", "6.7.1"), "JDW App Version")
 	token := fs.String("token", getEnv("JDW_TOKEN", "1|SFS9MMnn5deflq0BMcUTSijwSMBB4mc7NSG2rOhqb2765466"), "JDW Bearer Token")
@@ -149,7 +151,7 @@ func Run(args []string) error {
 		out = f
 	}
 
-	err = writeFormattedOutput(out, venues, finalData, *csvOutput)
+	err = writeFormattedOutput(out, venues, finalData, *csvOutput, *yamlOutput)
 	if err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
@@ -240,7 +242,10 @@ func expandVenues(client *jdw.Client, venues []jdw.Venue, concurrency int, inclu
 	return detailedVenues
 }
 
-func writeFormattedOutput(w io.Writer, venues []jdw.Venue, finalData interface{}, asCSV bool) error {
+func writeFormattedOutput(w io.Writer, venues []jdw.Venue, finalData interface{}, asCSV, asYAML bool) error {
+	if asYAML {
+		return writeYAML(w, finalData)
+	}
 	if asCSV {
 		return writeCSV(w, venues)
 	}
@@ -250,6 +255,12 @@ func writeFormattedOutput(w io.Writer, venues []jdw.Venue, finalData interface{}
 func writeJSON(w io.Writer, data interface{}) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
+	return encoder.Encode(data)
+}
+
+func writeYAML(w io.Writer, data interface{}) error {
+	encoder := yaml.NewEncoder(w)
+	encoder.SetIndent(2)
 	return encoder.Encode(data)
 }
 
@@ -396,40 +407,48 @@ func filterVenueForItems(venue map[string]interface{}, query string) bool {
 func searchAndPruneItems(node interface{}, queryWords []string) (bool, interface{}) {
 	switch v := node.(type) {
 	case map[string]interface{}:
-		// Check if this is a matching leaf/item
+		// Check if this node matches the query itself
 		combinedText := ""
-		hasChildren := false
-
-		for k, val := range v {
-			if k == "items" || k == "products" || k == "sections" || k == "categories" || k == "groups" {
-				hasChildren = true
-				continue
-			}
+		for _, val := range v {
 			if s, ok := val.(string); ok {
 				combinedText += " " + strings.ToLower(s)
 			}
 		}
 
-		if !hasChildren {
-			// Leaf node: check if it matches all query words
-			allWordsMatch := true
-			for _, word := range queryWords {
-				if !strings.Contains(combinedText, word) {
-					allWordsMatch = false
-					break
-				}
+		allWordsMatch := true
+		for _, word := range queryWords {
+			if !strings.Contains(combinedText, word) {
+				allWordsMatch = false
+				break
 			}
-			if allWordsMatch {
-				return true, v
-			}
-			return false, nil
 		}
 
-		// Non-leaf node: check children
+		if allWordsMatch {
+			// If the node itself matches, return it fully (including children)
+			return true, v
+		}
+
+		// If node doesn't match directly, check structural children
 		newMap := make(map[string]interface{})
 		anyChildMatch := false
+
+		// Define keys that we want to traverse into
+		structuralKeys := map[string]bool{
+			"items":      true,
+			"products":   true,
+			"sections":   true,
+			"categories": true,
+			"groups":     true,
+			"itemGroups": true,
+			"options":    true,
+			"portion":    true,
+			"choices":    true,
+			"addOns":     true,
+			"linked":     true,
+		}
+
 		for k, val := range v {
-			if k == "items" || k == "products" || k == "sections" || k == "categories" || k == "groups" {
+			if structuralKeys[k] {
 				match, pruned := searchAndPruneItems(val, queryWords)
 				if match {
 					anyChildMatch = true

@@ -161,7 +161,7 @@ func TestWriteFormattedOutput(t *testing.T) {
 
 	t.Run("JSON", func(t *testing.T) {
 		w := &strings.Builder{}
-		err := writeFormattedOutput(w, venues, venues, false)
+		err := writeFormattedOutput(w, venues, venues, false, false)
 		if err != nil {
 			t.Fatalf("writeFormattedOutput failed: %v", err)
 		}
@@ -172,12 +172,23 @@ func TestWriteFormattedOutput(t *testing.T) {
 
 	t.Run("CSV", func(t *testing.T) {
 		w := &strings.Builder{}
-		err := writeFormattedOutput(w, venues, venues, true)
+		err := writeFormattedOutput(w, venues, venues, true, false)
 		if err != nil {
 			t.Fatalf("writeFormattedOutput failed: %v", err)
 		}
 		if !strings.Contains(w.String(), "Pub Name") {
 			t.Errorf("Expected CSV header, got %q", w.String())
+		}
+	})
+
+	t.Run("YAML", func(t *testing.T) {
+		w := &strings.Builder{}
+		err := writeFormattedOutput(w, venues, venues, false, true)
+		if err != nil {
+			t.Fatalf("writeFormattedOutput failed: %v", err)
+		}
+		if !strings.Contains(w.String(), "name: Test") {
+			t.Errorf("Expected YAML output, got %q", w.String())
 		}
 	})
 }
@@ -331,6 +342,80 @@ func TestFilterVenueForItems(t *testing.T) {
 		matched := filterVenueForItems(v, "")
 		if !matched {
 			t.Errorf("Expected match (no-op) for empty query")
+		}
+	})
+
+	t.Run("MatchParentKeepsChildren", func(t *testing.T) {
+		// Test that searching for a parent item (e.g. "Burger") keeps its options
+		v := map[string]interface{}{
+			"menus": []interface{}{
+				map[string]interface{}{
+					"details": map[string]interface{}{
+						"items": []interface{}{
+							map[string]interface{}{
+								"name": "Burger",
+								"options": []interface{}{
+									map[string]interface{}{"label": "Cheese"},
+									map[string]interface{}{"label": "Bacon"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		matched := filterVenueForItems(v, "burger")
+		if !matched {
+			t.Fatalf("Expected match for burger")
+		}
+
+		menus := v["menus"].([]interface{})
+		details := menus[0].(map[string]interface{})["details"].(map[string]interface{})
+		items := details["items"].([]interface{})
+		burger := items[0].(map[string]interface{})
+		options := burger["options"].([]interface{})
+		if len(options) != 2 {
+			t.Errorf("Expected 2 options strings to be kept when parent matches, got %d", len(options))
+		}
+	})
+
+	t.Run("MatchChildKeepsParent", func(t *testing.T) {
+		// Test that searching for a child option (e.g. "Cheese") keeps the parent item but prunes non-matching siblings
+		v := map[string]interface{}{
+			"menus": []interface{}{
+				map[string]interface{}{
+					"details": map[string]interface{}{
+						"items": []interface{}{
+							map[string]interface{}{
+								"name": "Burger",
+								"options": []interface{}{
+									map[string]interface{}{"label": "Cheese"}, // Match
+									map[string]interface{}{"label": "Bacon"},  // No match
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		matched := filterVenueForItems(v, "cheese")
+		if !matched {
+			t.Fatalf("Expected match for cheese")
+		}
+
+		menus := v["menus"].([]interface{})
+		details := menus[0].(map[string]interface{})["details"].(map[string]interface{})
+		items := details["items"].([]interface{})
+		burger := items[0].(map[string]interface{})
+		options := burger["options"].([]interface{})
+		if len(options) != 1 {
+			t.Errorf("Expected 1 option to be kept when child matches, got %d", len(options))
+		} else {
+			if options[0].(map[string]interface{})["label"] != "Cheese" {
+				t.Errorf("Expected Cheese option, got %v", options[0])
+			}
 		}
 	})
 }
