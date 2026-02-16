@@ -30,7 +30,7 @@ Thumbs.db
 # Project specific
 latest_list.csv
 latest_list.json
-get_spoons
+/get_spoons
 web/venues.json
 web/venues.csv
 web/data.js
