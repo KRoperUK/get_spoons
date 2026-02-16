@@ -6,8 +6,10 @@ CSV_OUTPUT=latest_list.csv
 
 all: build
 
+VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || cat .release-please-manifest.json 2>/dev/null || echo "v0.0.0")
+
 build:
-	go build -o $(BINARY_NAME) $(CLI_PATH)/main.go
+	go build -ldflags="-X main.Version=$(VERSION)" -o $(BINARY_NAME) $(CLI_PATH)/main.go
 
 run:
 	@if [ -z "$(JDW_TOKEN)" ]; then \

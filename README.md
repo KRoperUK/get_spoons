@@ -47,19 +47,25 @@ get_spoons --output my_pubs.csv
 
 **Option 2: Flag**
 
+```bash
 get_spoons --token "1|..." --output my_pubs.csv
+```
 
-````
-
-**Fetch specific venue details:**
+**Search for a venue by name or location (fuzzy):**
 
 ```bash
-get_spoons -venue 95 -json -expand
-````
+get_spoons -search "henry newbolt"
+get_spoons -csv -search "bilston"
+```
 
 **Advanced Usage:**
 
-- `-expand`: Expand venue details (only valid with `-json`)
+- `-version`: Print version and exit
+- `-search`: Fuzzy search for a venue (matches name, address, town, etc.)
+- `-no-fuzzy`: Disable fuzzy searching (uses substring matching instead)
+- `-output`: Output file path (default: stdout)
+- `-csv`: Output as CSV
+- `-expand`: Expand venue details
 - `-menus`: Fetch menus for each venue (implies `-expand`)
 - `-items`: Fetch menu items (implies `-menus`)
 - `-limit`: Limit number of venues (e.g. `10`)
@@ -97,6 +103,11 @@ The library and CLI tool require a JDW Bearer Token for authentication. You can 
 
 See [openapi.yaml](openapi.yaml) for a full description of the identified endpoints.
 
-## Web Preview
+## Data & Web Preview
 
-View the latest .csv of data at: [spoons.ink](https://spoons.ink)
+The latest pub data is updated daily at 00:00 UTC and available here:
+
+- **JSON**: [venues.json](https://KRoperUK.github.io/get_spoons/venues.json)
+- **CSV**: [venues.csv](https://KRoperUK.github.io/get_spoons/venues.csv)
+
+View the web preview at: [spoons.ink](https://spoons.ink)
