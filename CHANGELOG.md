@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/KRoperUK/get_spoons/compare/v1.4.0...v1.5.0) (2026-02-16)
+
+
+### Features
+
+* packaging fix ([1a118eb](https://github.com/KRoperUK/get_spoons/commit/1a118eb1b5ccede94488930c187d24737b1f014c))
+
 ## [1.4.0](https://github.com/KRoperUK/get_spoons/compare/v1.3.0...v1.4.0) (2026-02-16)
 
 
