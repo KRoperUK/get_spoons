@@ -6,6 +6,7 @@
 [![Test](https://github.com/KRoperUK/get_spoons/actions/workflows/test.yml/badge.svg)](https://github.com/KRoperUK/get_spoons/actions/workflows/test.yml)
 [![Lint](https://github.com/KRoperUK/get_spoons/actions/workflows/lint.yml/badge.svg)](https://github.com/KRoperUK/get_spoons/actions/workflows/lint.yml)
 [![release-please](https://github.com/KRoperUK/get_spoons/actions/workflows/release-please.yaml/badge.svg)](https://github.com/KRoperUK/get_spoons/actions/workflows/release-please.yaml)
+[![codecov](https://codecov.io/gh/KRoperUK/get_spoons/branch/master/graph/badge.svg)](https://codecov.io/gh/KRoperUK/get_spoons)
 
 A Go client library for the J.D. Wetherspoon (JDW) API, including a companion CLI tool for scraping pub data.
 
