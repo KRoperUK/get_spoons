@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,7 +36,7 @@ func Run(args []string) error {
 	appVersion := fs.String("app-version", getEnv("JDW_APP_VERSION", "6.7.1"), "JDW App Version")
 	token := fs.String("token", getEnv("JDW_TOKEN", "1|SFS9MMnn5deflq0BMcUTSijwSMBB4mc7NSG2rOhqb2765466"), "JDW Bearer Token")
 	userAgent := fs.String("user-agent", getEnv("JDW_USER_AGENT", "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"), "User Agent")
-	debug := fs.Bool("debug", false, "Enable debug logging")
+	debugEnabled := fs.Bool("debug", false, "Enable debug logging")
 	limit := fs.Int("limit", 0, "Limit number of venues (0 for all)")
 	menus := fs.Bool("menus", false, "Fetch menus for each venue (implies -expand)")
 	items := fs.Bool("items", false, "Fetch menu items (implies -menus)")
@@ -48,7 +49,13 @@ func Run(args []string) error {
 	}
 
 	if *version {
-		fmt.Fprintf(os.Stderr, "get_spoons %s\n", Version)
+		v := Version
+		if v == "v0.0.0" {
+			if info, ok := debug.ReadBuildInfo(); ok {
+				v = info.Main.Version
+			}
+		}
+		fmt.Fprintf(os.Stderr, "get_spoons %s\n", v)
 		return nil
 	}
 
@@ -56,7 +63,7 @@ func Run(args []string) error {
 	if apiURL := os.Getenv("JDW_API_URL"); apiURL != "" {
 		client.SetBaseURL(apiURL)
 	}
-	client.SetDebug(*debug)
+	client.SetDebug(*debugEnabled)
 
 	var venues []jdw.Venue
 	var err error
