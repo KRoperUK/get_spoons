@@ -43,6 +43,7 @@ func Run(args []string) error {
 	concurrency := fs.Int("concurrency", 1, "Number of concurrent requests")
 	venueID := fs.Int("venue", 0, "Specific venue ID to fetch")
 	searchQuery := fs.String("search", "", "Search for a venue by name")
+	itemSearch := fs.String("item-search", "", "Search for a menu item (e.g. 'stella pint'). Only valid for a single venue.")
 	noFuzzy := fs.Bool("no-fuzzy", false, "Disable fuzzy searching (use case-insensitive substring match)")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -88,6 +89,21 @@ func Run(args []string) error {
 		fmt.Fprintf(os.Stderr, "Found %d matches.\n", len(venues))
 	}
 
+	if *itemSearch != "" {
+		if len(venues) == 0 {
+			return fmt.Errorf("no venues found to search items in")
+		}
+		if len(venues) > 1 {
+			if *venueID != 0 {
+				// This shouldn't happen as venues would have length 1
+			} else {
+				fmt.Fprintf(os.Stderr, "Item search is only allowed on an individual venue. Using the first match: %s (ID: %d)\n", venues[0].Name, venues[0].ID)
+				venues = venues[:1]
+			}
+		}
+		*items = true // Ensure we fetch items
+	}
+
 	if *limit > 0 && *limit < len(venues) {
 		fmt.Fprintf(os.Stderr, "Limiting output to %d venues.\n", *limit)
 		venues = venues[:*limit]
@@ -101,6 +117,24 @@ func Run(args []string) error {
 
 	if *expand || *menus || *items {
 		finalData = expandVenues(client, venues, *concurrency, *menus, *items)
+	}
+
+	if *itemSearch != "" {
+		detailedVenues, ok := finalData.([]map[string]interface{})
+		if ok {
+			var filtered []map[string]interface{}
+			for _, dv := range detailedVenues {
+				if filterVenueForItems(dv, *itemSearch) {
+					filtered = append(filtered, dv)
+				}
+			}
+			finalData = filtered
+			if len(filtered) == 0 {
+				fmt.Fprintf(os.Stderr, "No items matching \"%s\" found.\n", *itemSearch)
+			} else {
+				fmt.Fprintf(os.Stderr, "Filtered results for items matching \"%s\".\n", *itemSearch)
+			}
+		}
 	}
 
 	// Output Section
@@ -321,4 +355,113 @@ func searchVenues(venues []jdw.Venue, searchQuery string, noFuzzy bool) []jdw.Ve
 		filtered = append(filtered, res.venue)
 	}
 	return filtered
+}
+
+func filterVenueForItems(venue map[string]interface{}, query string) bool {
+	query = strings.ToLower(query)
+	queryWords := strings.Fields(query)
+	if len(queryWords) == 0 {
+		return true
+	}
+
+	menus, ok := venue["menus"].([]interface{})
+	if !ok {
+		return false
+	}
+
+	var filteredMenus []interface{}
+	for _, m := range menus {
+		menuMap, ok := m.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		details, ok := menuMap["details"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		if match, pruned := searchAndPruneItems(details, queryWords); match {
+			menuMap["details"] = pruned
+			filteredMenus = append(filteredMenus, menuMap)
+		}
+	}
+
+	if len(filteredMenus) > 0 {
+		venue["menus"] = filteredMenus
+		return true
+	}
+	return false
+}
+
+func searchAndPruneItems(node interface{}, queryWords []string) (bool, interface{}) {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		// Check if this is a matching leaf/item
+		combinedText := ""
+		hasChildren := false
+
+		for k, val := range v {
+			if k == "items" || k == "products" || k == "sections" || k == "categories" || k == "groups" {
+				hasChildren = true
+				continue
+			}
+			if s, ok := val.(string); ok {
+				combinedText += " " + strings.ToLower(s)
+			}
+		}
+
+		if !hasChildren {
+			// Leaf node: check if it matches all query words
+			allWordsMatch := true
+			for _, word := range queryWords {
+				if !strings.Contains(combinedText, word) {
+					allWordsMatch = false
+					break
+				}
+			}
+			if allWordsMatch {
+				return true, v
+			}
+			return false, nil
+		}
+
+		// Non-leaf node: check children
+		newMap := make(map[string]interface{})
+		anyChildMatch := false
+		for k, val := range v {
+			if k == "items" || k == "products" || k == "sections" || k == "categories" || k == "groups" {
+				match, pruned := searchAndPruneItems(val, queryWords)
+				if match {
+					anyChildMatch = true
+					newMap[k] = pruned
+				}
+			} else {
+				// Keep metadata
+				newMap[k] = val
+			}
+		}
+
+		if anyChildMatch {
+			return true, newMap
+		}
+		return false, nil
+
+	case []interface{}:
+		var newSlice []interface{}
+		anyMatch := false
+		for _, item := range v {
+			match, pruned := searchAndPruneItems(item, queryWords)
+			if match {
+				anyMatch = true
+				newSlice = append(newSlice, pruned)
+			}
+		}
+		if anyMatch {
+			return true, newSlice
+		}
+		return false, nil
+
+	default:
+		return false, nil
+	}
 }

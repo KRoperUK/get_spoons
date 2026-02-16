@@ -270,3 +270,67 @@ func TestRun(t *testing.T) {
 		}
 	})
 }
+
+func TestFilterVenueForItems(t *testing.T) {
+	getVenue := func() map[string]interface{} {
+		return map[string]interface{}{
+			"name": "Test Pub",
+			"menus": []interface{}{
+				map[string]interface{}{
+					"name": "Drinks",
+					"details": map[string]interface{}{
+						"sections": []interface{}{
+							map[string]interface{}{
+								"name": "Beer",
+								"items": []interface{}{
+									map[string]interface{}{"name": "Stella Artois Pint", "price": 4.5},
+									map[string]interface{}{"name": "Peroni", "price": 5.0},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("MatchItem", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "stella pint")
+		if !matched {
+			t.Fatalf("Expected match for stella pint")
+		}
+		menus := v["menus"].([]interface{})
+		if len(menus) != 1 {
+			t.Fatalf("Expected 1 menu, got %d", len(menus))
+		}
+		m := menus[0].(map[string]interface{})
+		details := m["details"].(map[string]interface{})
+		sections := details["sections"].([]interface{})
+		section := sections[0].(map[string]interface{})
+		items := section["items"].([]interface{})
+		if len(items) != 1 {
+			t.Errorf("Expected 1 item, got %d", len(items))
+		}
+		itemName := items[0].(map[string]interface{})["name"].(string)
+		if itemName != "Stella Artois Pint" {
+			t.Errorf("Expected Stella Artois Pint, got %s", itemName)
+		}
+	})
+
+	t.Run("NoMatch", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "guinness")
+		if matched {
+			t.Errorf("Expected no match for guinness")
+		}
+	})
+
+	t.Run("EmptyQuery", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "")
+		if !matched {
+			t.Errorf("Expected match (no-op) for empty query")
+		}
+	})
+}
