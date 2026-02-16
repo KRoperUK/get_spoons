@@ -94,7 +94,7 @@ func Run(args []string) error {
 	}
 
 	if *items && len(venues) > 10 {
-		fmt.Fprintf(os.Stderr, "WARNING: Fetching menu items for %d venues. Fully expanded venue data is large (approx 20MB per venue); total output could exceed %d MB.\n", len(venues), len(venues)*20)
+		fmt.Fprintf(os.Stderr, "WARNING: Fetching menu items for %d venues. Fully expanded venue data is large (approx 10MB per venue); total output could exceed %d MB.\n", len(venues), len(venues)*20)
 	}
 	var finalData interface{}
 	finalData = venues // Default to standard venues
