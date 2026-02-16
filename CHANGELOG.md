@@ -2,17 +2,15 @@
 
 ## [1.1.1](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.1.0...get_spoons-v1.1.1) (2026-02-15)
 
-
 ### Bug Fixes
 
-* **ci:** update go version to 1.24.0 in deploy workflow ([#11](https://github.com/KRoperUK/get_spoons/issues/11)) ([4135949](https://github.com/KRoperUK/get_spoons/commit/41359491e776ce48692436560517844f0e0664a7))
+- **ci:** update go version to 1.24.0 in deploy workflow ([#11](https://github.com/KRoperUK/get_spoons/issues/11)) ([4135949](https://github.com/KRoperUK/get_spoons/commit/41359491e776ce48692436560517844f0e0664a7))
 
 ## [1.1.0](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.0.1...get_spoons-v1.1.0) (2026-02-15)
 
-
 ### Features
 
-* allow expanded details ([#9](https://github.com/KRoperUK/get_spoons/issues/9)) ([44546f4](https://github.com/KRoperUK/get_spoons/commit/44546f4b39f0b56efbeb95f252e58edfde671500))
+- allow expanded details ([#9](https://github.com/KRoperUK/get_spoons/issues/9)) ([44546f4](https://github.com/KRoperUK/get_spoons/commit/44546f4b39f0b56efbeb95f252e58edfde671500))
 
 ## [1.0.1](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.0.0...get_spoons-v1.0.1) (2026-02-15)
 

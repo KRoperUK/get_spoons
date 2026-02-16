@@ -48,15 +48,10 @@ jobs:
           JDW_TOKEN: ${{ secrets.JDW_TOKEN }}
         run: ./get_spoons -json -output venues.json
 
-      - name: Fetch Venue Data (Expanded)
-        env:
-          JDW_TOKEN: ${{ secrets.JDW_TOKEN }}
-        run: ./get_spoons -json -menus -items -output venues_expanded.json
-
       - name: Bake Data
         run: |
           echo "window.SPOONS_DATA = " > web/data.js
-          cat venues_expanded.json >> web/data.js
+          cat venues.json >> web/data.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -72,12 +67,6 @@ jobs:
         with:
           # Upload venues.json
           path: "./venues.json"
-
-      - name: Upload Expanded Data
-        uses: actions/upload-artifact@v4
-        with:
-          # Upload venues_expanded.json
-          path: "./venues_expanded.json"
 
       - name: Deploy to GitHub Pages
         id: deployment
