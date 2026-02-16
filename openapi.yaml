@@ -105,6 +105,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VenueResponse"
+  /api/v0.1/jdw/venues/{id}/sales-areas/{salesAreaId}/menus:
+    get:
+      summary: Get menus for a sales area
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: salesAreaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenusResponse"
+  /api/v0.1/jdw/venues/{id}/sales-areas/{salesAreaId}/menus/{menuId}:
+    get:
+      summary: Get menu items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: salesAreaId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: menuId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuDetailsResponse"
   /api/v0.1/content/promotional-banners:
     get:
       summary: Get promotional banners
@@ -264,5 +311,116 @@ components:
           type: string
         url:
           type: string
+    MenusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Menu"
+    MenuDetailsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/MenuDetails"
+    Menu:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        canOrder:
+          type: boolean
+        details:
+          $ref: "#/components/schemas/MenuDetails"
+    MenuDetails:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        hidden:
+          type: boolean
+        itemGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemGroup"
+    ItemGroup:
+      type: object
+      properties:
+        description:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        calories:
+          type: integer
+        displayRecordId:
+          type: integer
+        itemType:
+          type: string
+        isOutOfStock:
+          type: boolean
+        options:
+          $ref: "#/components/schemas/ItemOptions"
+    ItemOptions:
+      type: object
+      properties:
+        portion:
+          $ref: "#/components/schemas/Portion"
+        addOns:
+          type: array
+          items:
+            type: object
+        choices:
+          type: array
+          items:
+            type: object
+    Portion:
+      type: object
+      properties:
+        title:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortionOption"
+    PortionOption:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: object
+          properties:
+            price:
+              type: object
+              properties:
+                value:
+                  type: number
 security:
   - bearerAuth: []

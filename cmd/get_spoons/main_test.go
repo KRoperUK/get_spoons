@@ -161,7 +161,7 @@ func TestWriteFormattedOutput(t *testing.T) {
 
 	t.Run("JSON", func(t *testing.T) {
 		w := &strings.Builder{}
-		err := writeFormattedOutput(w, venues, venues, false)
+		err := writeFormattedOutput(w, venues, venues, false, false)
 		if err != nil {
 			t.Fatalf("writeFormattedOutput failed: %v", err)
 		}
@@ -172,12 +172,23 @@ func TestWriteFormattedOutput(t *testing.T) {
 
 	t.Run("CSV", func(t *testing.T) {
 		w := &strings.Builder{}
-		err := writeFormattedOutput(w, venues, venues, true)
+		err := writeFormattedOutput(w, venues, venues, true, false)
 		if err != nil {
 			t.Fatalf("writeFormattedOutput failed: %v", err)
 		}
 		if !strings.Contains(w.String(), "Pub Name") {
 			t.Errorf("Expected CSV header, got %q", w.String())
+		}
+	})
+
+	t.Run("YAML", func(t *testing.T) {
+		w := &strings.Builder{}
+		err := writeFormattedOutput(w, venues, venues, false, true)
+		if err != nil {
+			t.Fatalf("writeFormattedOutput failed: %v", err)
+		}
+		if !strings.Contains(w.String(), "name: Test") {
+			t.Errorf("Expected YAML output, got %q", w.String())
 		}
 	})
 }
@@ -267,6 +278,318 @@ func TestRun(t *testing.T) {
 		out, _ := io.ReadAll(r)
 		if !strings.Contains(string(out), "Pub Name") {
 			t.Errorf("Expected CSV header in output, got %s", string(out))
+		}
+	})
+
+	t.Run("ItemSearch", func(t *testing.T) {
+		// Mock server for item search
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "/venues") {
+				// GetVenues
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "The Test Pub"}]}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10/sales-areas/456/menus/789") {
+				// GetMenuItems
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Burger", "price": 10.0}, {"name": "Salad", "price": 8.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10/sales-areas/456/menus") {
+				// GetMenus
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10") {
+				// GetVenueDetails
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		// Capture stderr
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		err := Run([]string{"-item-search", "burger"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		outStub, _ := io.ReadAll(r)
+		outStr := string(outStub)
+		errStub, _ := io.ReadAll(rErr)
+		errStr := string(errStub)
+
+		// Check output JSON contains "Burger" but NOT "Salad"
+		if !strings.Contains(outStr, "Burger") {
+			t.Errorf("Expected output to contain 'Burger', got: %s", outStr)
+		}
+		if strings.Contains(outStr, "Salad") {
+			t.Errorf("Expected output NOT to contain 'Salad', got: %s", outStr)
+		}
+
+		// Check stderr for filtering message
+		if !strings.Contains(errStr, "Filtered results for items matching \"burger\"") {
+			t.Errorf("Expected stderr to confirm filtering, got: %s", errStr)
+		}
+	})
+
+	t.Run("ItemSearch_MultipleVenues", func(t *testing.T) {
+		// Mock server returning multiple venues
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "venues") {
+				// GetVenues - Return 2 venues
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "Pub One"}, {"id": 2, "venueRef": 20, "name": "Pub Two"}]}`)
+			} else if strings.Contains(r.URL.Path, "789") {
+				// GetMenuItems for Pub One
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Burger", "price": 10.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "menus") {
+				// GetMenus for Pub One
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "venues/10") {
+				// GetVenueDetails for Pub One
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				// Should not be called for Pub Two
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		// Use -item-search "burger"
+		err := Run([]string{"-item-search", "burger"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		// We need to read from r to clear the buffer, even if unused, to avoid pipe issues
+		// However, the error is that it's unused. Let's just discard it.
+		_, _ = io.Copy(io.Discard, r)
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		errBytes, _ := io.ReadAll(rErr)
+		errStr := string(errBytes)
+
+		// Check for the warning message
+		if !strings.Contains(errStr, "Item search is only allowed on an individual venue. Using the first match") {
+			t.Errorf("Expected multiple venue warning, got: %s", errStr)
+		}
+	})
+
+	t.Run("ItemSearch_NoMatches", func(t *testing.T) {
+		// Mock server for item search with no matches
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "venues") {
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "The Test Pub"}]}`)
+			} else if strings.Contains(r.URL.Path, "789") {
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Salad", "price": 8.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "menus") {
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "venues/10") {
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		err := Run([]string{"-item-search", "steak"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		_, _ = io.Copy(io.Discard, r)
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		errBytes, _ := io.ReadAll(rErr)
+		errStr := string(errBytes)
+
+		if !strings.Contains(errStr, "No items matching \"steak\" found") {
+			t.Errorf("Expected no items found message, got: %s", errStr)
+		}
+	})
+}
+
+func TestFilterVenueForItems(t *testing.T) {
+	getVenue := func() map[string]interface{} {
+		return map[string]interface{}{
+			"name": "Test Pub",
+			"menus": []interface{}{
+				map[string]interface{}{
+					"name": "Drinks",
+					"details": map[string]interface{}{
+						"sections": []interface{}{
+							map[string]interface{}{
+								"name": "Beer",
+								"items": []interface{}{
+									map[string]interface{}{"name": "Stella Artois Pint", "price": 4.5},
+									map[string]interface{}{"name": "Peroni", "price": 5.0},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("MatchItem", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "stella pint")
+		if !matched {
+			t.Fatalf("Expected match for stella pint")
+		}
+		menus := v["menus"].([]interface{})
+		if len(menus) != 1 {
+			t.Fatalf("Expected 1 menu, got %d", len(menus))
+		}
+		m := menus[0].(map[string]interface{})
+		details := m["details"].(map[string]interface{})
+		sections := details["sections"].([]interface{})
+		section := sections[0].(map[string]interface{})
+		items := section["items"].([]interface{})
+		if len(items) != 1 {
+			t.Errorf("Expected 1 item, got %d", len(items))
+		}
+		itemName := items[0].(map[string]interface{})["name"].(string)
+		if itemName != "Stella Artois Pint" {
+			t.Errorf("Expected Stella Artois Pint, got %s", itemName)
+		}
+	})
+
+	t.Run("NoMatch", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "guinness")
+		if matched {
+			t.Errorf("Expected no match for guinness")
+		}
+	})
+
+	t.Run("EmptyQuery", func(t *testing.T) {
+		v := getVenue()
+		matched := filterVenueForItems(v, "")
+		if !matched {
+			t.Errorf("Expected match (no-op) for empty query")
+		}
+	})
+
+	t.Run("MatchParentKeepsChildren", func(t *testing.T) {
+		// Test that searching for a parent item (e.g. "Burger") keeps its options
+		v := map[string]interface{}{
+			"menus": []interface{}{
+				map[string]interface{}{
+					"details": map[string]interface{}{
+						"items": []interface{}{
+							map[string]interface{}{
+								"name": "Burger",
+								"options": []interface{}{
+									map[string]interface{}{"label": "Cheese"},
+									map[string]interface{}{"label": "Bacon"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		matched := filterVenueForItems(v, "burger")
+		if !matched {
+			t.Fatalf("Expected match for burger")
+		}
+
+		menus := v["menus"].([]interface{})
+		details := menus[0].(map[string]interface{})["details"].(map[string]interface{})
+		items := details["items"].([]interface{})
+		burger := items[0].(map[string]interface{})
+		options := burger["options"].([]interface{})
+		if len(options) != 2 {
+			t.Errorf("Expected 2 options strings to be kept when parent matches, got %d", len(options))
+		}
+	})
+
+	t.Run("MatchChildKeepsParent", func(t *testing.T) {
+		// Test that searching for a child option (e.g. "Cheese") keeps the parent item but prunes non-matching siblings
+		v := map[string]interface{}{
+			"menus": []interface{}{
+				map[string]interface{}{
+					"details": map[string]interface{}{
+						"items": []interface{}{
+							map[string]interface{}{
+								"name": "Burger",
+								"options": []interface{}{
+									map[string]interface{}{"label": "Cheese"}, // Match
+									map[string]interface{}{"label": "Bacon"},  // No match
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		matched := filterVenueForItems(v, "cheese")
+		if !matched {
+			t.Fatalf("Expected match for cheese")
+		}
+
+		menus := v["menus"].([]interface{})
+		details := menus[0].(map[string]interface{})["details"].(map[string]interface{})
+		items := details["items"].([]interface{})
+		burger := items[0].(map[string]interface{})
+		options := burger["options"].([]interface{})
+		if len(options) != 1 {
+			t.Errorf("Expected 1 option to be kept when child matches, got %d", len(options))
+		} else {
+			if options[0].(map[string]interface{})["label"] != "Cheese" {
+				t.Errorf("Expected Cheese option, got %v", options[0])
+			}
 		}
 	})
 }
