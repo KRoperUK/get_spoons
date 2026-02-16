@@ -47,9 +47,24 @@ get_spoons --output my_pubs.csv
 
 **Option 2: Flag**
 
-```bash
 get_spoons --token "1|..." --output my_pubs.csv
-```
+
+````
+
+**Fetch specific venue details:**
+
+```bash
+get_spoons -venue 95 -json -expand
+````
+
+**Advanced Usage:**
+
+- `-expand`: Expand venue details (only valid with `-json`)
+- `-menus`: Fetch menus for each venue (implies `-expand`)
+- `-items`: Fetch menu items (implies `-menus`)
+- `-limit`: Limit number of venues (e.g. `10`)
+- `-concurrency`: Number of concurrent requests (default `1`)
+- `-venue`: Specific venue ID to fetch
 
 ## Library Usage
 

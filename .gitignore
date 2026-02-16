@@ -29,6 +29,7 @@ Thumbs.db
 
 # Project specific
 latest_list.csv
+latest_list.json
 get_spoons
 
 node_modules/
