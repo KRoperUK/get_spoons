@@ -155,3 +155,137 @@ func TestGetVenueDetails(t *testing.T) {
 		t.Errorf("Expected extraField 'extraValue', got '%v'", details["extraField"])
 	}
 }
+
+func TestGetVenue(t *testing.T) {
+	mockResponse := `{
+		"success": true,
+		"data": {
+			"id": 1,
+			"name": "Single Venue"
+		}
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewClient("1.2.3", "test-token", "test-ua")
+	client.baseURL = server.URL
+	venue, err := client.GetVenue(1)
+	if err != nil {
+		t.Fatalf("GetVenue failed: %v", err)
+	}
+
+	if venue.Name != "Single Venue" {
+		t.Errorf("Expected name 'Single Venue', got '%s'", venue.Name)
+	}
+}
+
+func TestGetMenus(t *testing.T) {
+	mockResponse := `{
+		"success": true,
+		"data": [
+			{"id": 10, "name": "Main Menu"}
+		]
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewClient("1.2.3", "test-token", "test-ua")
+	client.baseURL = server.URL
+	menus, err := client.GetMenus(123, 456)
+	if err != nil {
+		t.Fatalf("GetMenus failed: %v", err)
+	}
+
+	if len(menus) != 1 {
+		t.Errorf("Expected 1 menu, got %d", len(menus))
+	}
+}
+
+func TestGetMenuItems(t *testing.T) {
+	mockResponse := `{
+		"success": true,
+		"data": {
+			"id": 789,
+			"categories": [
+				{"id": 1000, "name": "Burgers"}
+			]
+		}
+	}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewClient("1.2.3", "test-token", "test-ua")
+	client.baseURL = server.URL
+	details, err := client.GetMenuItems(123, 456, 789)
+	if err != nil {
+		t.Fatalf("GetMenuItems failed: %v", err)
+	}
+
+	if id, ok := details["id"].(float64); !ok || id != 789 {
+		t.Errorf("Expected id 789, got %v", details["id"])
+	}
+}
+
+func TestSetDebug(t *testing.T) {
+	client := NewClient("1.2.3", "token", "ua")
+	client.SetDebug(true)
+	if !client.debug {
+		t.Error("Expected debug to be true")
+	}
+}
+
+func TestDoRequestErrors(t *testing.T) {
+	t.Run("StatusNotOK", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+		}))
+		defer server.Close()
+
+		client := NewClient("v", "t", "u")
+		client.baseURL = server.URL
+		_, err := client.GetVenues()
+		if err == nil || err.Error() != "API returned status: 403 Forbidden" {
+			t.Errorf("Expected 403 error, got %v", err)
+		}
+	})
+
+	t.Run("SuccessFalse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{"success": false}`)
+		}))
+		defer server.Close()
+
+		client := NewClient("v", "t", "u")
+		client.baseURL = server.URL
+		_, err := client.GetVenues()
+		if err == nil || err.Error() != "API response indicated failure" {
+			t.Errorf("Expected failure error, got %v", err)
+		}
+	})
+
+	t.Run("InvalidJSON", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `invalid`)
+		}))
+		defer server.Close()
+
+		client := NewClient("v", "t", "u")
+		client.baseURL = server.URL
+		_, err := client.GetVenues()
+		if err == nil {
+			t.Error("Expected JSON unmarshal error")
+		}
+	})
+}

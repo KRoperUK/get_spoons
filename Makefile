@@ -22,6 +22,10 @@ run:
 test:
 	go test ./...
 
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
 test-live:
 	JDW_LIVE_TESTS=true JDW_TOKEN="$(JDW_TOKEN)" go test -v ./jdw/...
 
@@ -35,4 +39,4 @@ vet:
 	go vet ./...
 
 clean:
-	rm -f $(BINARY_NAME) $(CSV_OUTPUT)
+	rm -f $(BINARY_NAME) $(CSV_OUTPUT) coverage.out

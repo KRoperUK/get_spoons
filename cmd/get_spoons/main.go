@@ -65,64 +65,7 @@ func main() {
 	}
 
 	if *searchQuery != "" {
-		if *noFuzzy {
-			fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (substring)...\n", *searchQuery)
-			query := strings.ToLower(*searchQuery)
-			var filtered []jdw.Venue
-			for _, v := range venues {
-				// Search name, address, town, county, postcode
-				found := strings.Contains(strings.ToLower(v.Name), query) ||
-					strings.Contains(strings.ToLower(v.Address.Line1), query) ||
-					strings.Contains(strings.ToLower(v.Address.Town), query) ||
-					strings.Contains(strings.ToLower(v.Address.Postcode), query) ||
-					strings.Contains(strings.ToLower(v.Address.County), query)
-
-				if found {
-					filtered = append(filtered, v)
-				}
-			}
-			venues = filtered
-		} else {
-			fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (fuzzy)...\n", *searchQuery)
-
-			type searchResult struct {
-				venue jdw.Venue
-				rank  int
-			}
-			var results []searchResult
-
-			for _, v := range venues {
-				// Check name
-				bestRank := fuzzy.RankMatchFold(*searchQuery, v.Name)
-
-				// Check address fields and take the best (lowest) rank
-				fields := []string{v.Address.Line1, v.Address.Town, v.Address.County, v.Address.Postcode}
-				for _, f := range fields {
-					r := fuzzy.RankMatchFold(*searchQuery, f)
-					if r >= 0 && (bestRank < 0 || r < bestRank) {
-						bestRank = r
-					}
-				}
-
-				if bestRank >= 0 {
-					results = append(results, searchResult{v, bestRank})
-				}
-			}
-
-			// Sort by rank: shorter distance first, then alphabetically
-			sort.Slice(results, func(i, j int) bool {
-				if results[i].rank != results[j].rank {
-					return results[i].rank < results[j].rank
-				}
-				return results[i].venue.Name < results[j].venue.Name
-			})
-
-			var filtered []jdw.Venue
-			for _, res := range results {
-				filtered = append(filtered, res.venue)
-			}
-			venues = filtered
-		}
+		venues = searchVenues(venues, *searchQuery, *noFuzzy)
 		fmt.Fprintf(os.Stderr, "Found %d matches.\n", len(venues))
 	}
 
@@ -310,4 +253,65 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func searchVenues(venues []jdw.Venue, searchQuery string, noFuzzy bool) []jdw.Venue {
+	if noFuzzy {
+		fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (substring)...\n", searchQuery)
+		query := strings.ToLower(searchQuery)
+		var filtered []jdw.Venue
+		for _, v := range venues {
+			// Search name, address, town, county, postcode
+			found := strings.Contains(strings.ToLower(v.Name), query) ||
+				strings.Contains(strings.ToLower(v.Address.Line1), query) ||
+				strings.Contains(strings.ToLower(v.Address.Town), query) ||
+				strings.Contains(strings.ToLower(v.Address.Postcode), query) ||
+				strings.Contains(strings.ToLower(v.Address.County), query)
+
+			if found {
+				filtered = append(filtered, v)
+			}
+		}
+		return filtered
+	}
+
+	fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (fuzzy)...\n", searchQuery)
+
+	type searchResult struct {
+		venue jdw.Venue
+		rank  int
+	}
+	var results []searchResult
+
+	for _, v := range venues {
+		// Check name
+		bestRank := fuzzy.RankMatchFold(searchQuery, v.Name)
+
+		// Check address fields and take the best (lowest) rank
+		fields := []string{v.Address.Line1, v.Address.Town, v.Address.County, v.Address.Postcode}
+		for _, f := range fields {
+			r := fuzzy.RankMatchFold(searchQuery, f)
+			if r >= 0 && (bestRank < 0 || r < bestRank) {
+				bestRank = r
+			}
+		}
+
+		if bestRank >= 0 {
+			results = append(results, searchResult{v, bestRank})
+		}
+	}
+
+	// Sort by rank: shorter distance first, then alphabetically
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].rank != results[j].rank {
+			return results[i].rank < results[j].rank
+		}
+		return results[i].venue.Name < results[j].venue.Name
+	})
+
+	var filtered []jdw.Venue
+	for _, res := range results {
+		filtered = append(filtered, res.venue)
+	}
+	return filtered
 }
