@@ -22,11 +22,14 @@ jobs:
 
       - name: Test
         run: go test -v -coverprofile=coverage.out ./...
+        id: coverage
 
       - name: Check Coverage
+        if: hashFiles('coverage.out') != ''
         run: go tool cover -func=coverage.out
 
       - name: Upload coverage reports to Codecov
+        if: hashFiles('coverage.out') != ''
         uses: codecov/codecov-action@v5
         with:
           files: coverage.out
