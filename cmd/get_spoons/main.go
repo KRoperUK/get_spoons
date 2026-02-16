@@ -5,16 +5,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/KRoperUK/get_spoons/jdw"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
+var Version = "v0.0.0"
+
 func main() {
-	outputFile := flag.String("output", "latest_list.csv", "Output file path (CSV by default, JSON if -json flag is strictly used)")
-	jsonOutput := flag.Bool("json", false, "Output as JSON")
+	version := flag.Bool("version", false, "Print version and exit")
+	outputFile := flag.String("output", "", "Output file path (default: stdout)")
+	csvOutput := flag.Bool("csv", false, "Output as CSV")
 	expand := flag.Bool("expand", false, "Expand venue details (only valid with -json)")
 	appVersion := flag.String("app-version", getEnv("JDW_APP_VERSION", "6.7.1"), "JDW App Version")
 	token := flag.String("token", getEnv("JDW_TOKEN", "1|SFS9MMnn5deflq0BMcUTSijwSMBB4mc7NSG2rOhqb2765466"), "JDW Bearer Token")
@@ -25,11 +32,13 @@ func main() {
 	items := flag.Bool("items", false, "Fetch menu items (implies -menus)")
 	concurrency := flag.Int("concurrency", 1, "Number of concurrent requests")
 	venueID := flag.Int("venue", 0, "Specific venue ID to fetch")
+	searchQuery := flag.String("search", "", "Search for a venue by name")
+	noFuzzy := flag.Bool("no-fuzzy", false, "Disable fuzzy searching (use case-insensitive substring match)")
 	flag.Parse()
 
-	// If no output file was specified and we are in JSON mode, use .json extension
-	if *jsonOutput && *outputFile == "latest_list.csv" {
-		*outputFile = "latest_list.json"
+	if *version {
+		fmt.Fprintf(os.Stderr, "get_spoons %s\n", Version)
+		os.Exit(0)
 	}
 
 	client := jdw.NewClient(*appVersion, *token, *userAgent)
@@ -39,7 +48,7 @@ func main() {
 	var err error
 
 	if *venueID != 0 {
-		fmt.Printf("Fetching venue %d...\n", *venueID)
+		fmt.Fprintf(os.Stderr, "Fetching venue %d...\n", *venueID)
 		v, err := client.GetVenue(*venueID)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching venue %d: %v\n", *venueID, err)
@@ -47,7 +56,7 @@ func main() {
 		}
 		venues = []jdw.Venue{*v}
 	} else {
-		fmt.Println("Fetching venues from JDW API...")
+		fmt.Fprintln(os.Stderr, "Fetching venues from JDW API...")
 		venues, err = client.GetVenues()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching venues: %v\n", err)
@@ -55,113 +64,175 @@ func main() {
 		}
 	}
 
+	if *searchQuery != "" {
+		if *noFuzzy {
+			fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (substring)...\n", *searchQuery)
+			query := strings.ToLower(*searchQuery)
+			var filtered []jdw.Venue
+			for _, v := range venues {
+				// Search name, address, town, county, postcode
+				found := strings.Contains(strings.ToLower(v.Name), query) ||
+					strings.Contains(strings.ToLower(v.Address.Line1), query) ||
+					strings.Contains(strings.ToLower(v.Address.Town), query) ||
+					strings.Contains(strings.ToLower(v.Address.Postcode), query) ||
+					strings.Contains(strings.ToLower(v.Address.County), query)
+
+				if found {
+					filtered = append(filtered, v)
+				}
+			}
+			venues = filtered
+		} else {
+			fmt.Fprintf(os.Stderr, "Searching for venues matching \"%s\" (fuzzy)...\n", *searchQuery)
+
+			type searchResult struct {
+				venue jdw.Venue
+				rank  int
+			}
+			var results []searchResult
+
+			for _, v := range venues {
+				// Check name
+				bestRank := fuzzy.RankMatchFold(*searchQuery, v.Name)
+
+				// Check address fields and take the best (lowest) rank
+				fields := []string{v.Address.Line1, v.Address.Town, v.Address.County, v.Address.Postcode}
+				for _, f := range fields {
+					r := fuzzy.RankMatchFold(*searchQuery, f)
+					if r >= 0 && (bestRank < 0 || r < bestRank) {
+						bestRank = r
+					}
+				}
+
+				if bestRank >= 0 {
+					results = append(results, searchResult{v, bestRank})
+				}
+			}
+
+			// Sort by rank: shorter distance first, then alphabetically
+			sort.Slice(results, func(i, j int) bool {
+				if results[i].rank != results[j].rank {
+					return results[i].rank < results[j].rank
+				}
+				return results[i].venue.Name < results[j].venue.Name
+			})
+
+			var filtered []jdw.Venue
+			for _, res := range results {
+				filtered = append(filtered, res.venue)
+			}
+			venues = filtered
+		}
+		fmt.Fprintf(os.Stderr, "Found %d matches.\n", len(venues))
+	}
+
 	if *limit > 0 && *limit < len(venues) {
-		fmt.Printf("Limiting output to %d venues.\n", *limit)
+		fmt.Fprintf(os.Stderr, "Limiting output to %d venues.\n", *limit)
 		venues = venues[:*limit]
 	}
 
 	if *items && len(venues) > 10 {
 		fmt.Fprintf(os.Stderr, "WARNING: Fetching menu items for %d venues. Fully expanded venue data is large (approx 20MB per venue); total output could exceed %d MB.\n", len(venues), len(venues)*20)
 	}
+	var finalData interface{}
+	finalData = venues // Default to standard venues
 
-	if *jsonOutput {
-		if *expand || *menus || *items {
-			fmt.Printf("Fetching details for %d venues...\n", len(venues))
+	if *expand || *menus || *items {
+		fmt.Fprintf(os.Stderr, "Fetching details for %d venues...\n", len(venues))
 
-			if *concurrency < 1 {
-				*concurrency = 1
-			}
+		if *concurrency < 1 {
+			*concurrency = 1
+		}
 
-			var (
-				detailedVenues []map[string]interface{}
-				wg             sync.WaitGroup
-				mu             sync.Mutex
-				processedCount int
-				sem            = make(chan struct{}, *concurrency)
-			)
+		var (
+			detailedVenues []map[string]interface{}
+			wg             sync.WaitGroup
+			mu             sync.Mutex
+			processedCount int
+			sem            = make(chan struct{}, *concurrency)
+		)
 
-			// Helper to report progress safely
-			reportProgress := func() {
-				processedCount++
-				fmt.Printf("\rProcessing venue %d/%d", processedCount, len(venues))
-			}
+		reportProgress := func() {
+			processedCount++
+			fmt.Fprintf(os.Stderr, "\rProcessing venue %d/%d", processedCount, len(venues))
+		}
 
-			for _, v := range venues {
-				wg.Add(1)
-				sem <- struct{}{} // Acquire semaphore
+		for _, v := range venues {
+			wg.Add(1)
+			sem <- struct{}{}
 
-				go func(v jdw.Venue) {
-					defer wg.Done()
-					defer func() { <-sem }() // Release semaphore
+			go func(v jdw.Venue) {
+				defer wg.Done()
+				defer func() { <-sem }()
 
-					// Try using VenueRef instead of ID, as ID resulted in 404s
-					details, err := client.GetVenueDetails(v.VenueRef)
-					if err != nil {
-						// Use safe printing for errors or just standard stderr (might interleave)
-						// For now, simple stderr is acceptable, but let's try to not break the progress line too much
-						mu.Lock()
-						// Clear line first if needed but simple println is usually okay for errors
-						fmt.Fprintf(os.Stderr, "\nError fetching details for venue ID %d (Ref %d): %v\n", v.ID, v.VenueRef, err)
-						// We don't increment processedCount here or maybe we should to show progress?
-						// Original code loop index `i` went from 0 to len-1 regardless of error.
-						// So yes, we should increment processedCount.
-						reportProgress()
-						mu.Unlock()
-						return
-					}
+				details, err := client.GetVenueDetails(v.VenueRef)
+				if err != nil {
+					mu.Lock()
+					fmt.Fprintf(os.Stderr, "\nError fetching details for venue ID %d (Ref %d): %v\n", v.ID, v.VenueRef, err)
+					reportProgress()
+					mu.Unlock()
+					return
+				}
 
-					if *menus || *items {
-						// Extract Sales Area ID
-						if salesAreas, ok := details["salesAreas"].([]interface{}); ok && len(salesAreas) > 0 {
-							if firstArea, ok := salesAreas[0].(map[string]interface{}); ok {
-								if salesAreaIDFloat, ok := firstArea["id"].(float64); ok {
-									salesAreaID := int(salesAreaIDFloat)
-									menuData, err := client.GetMenus(v.VenueRef, salesAreaID)
-									if err != nil {
-										fmt.Fprintf(os.Stderr, "\nError fetching menus for venue %d: %v\n", v.VenueRef, err)
-									} else {
-										if *items {
-											// Iterate over menus and fetch items for each
-											// This inner loop could also be parallelized but let's stick to venue level parallelism first
-											// unless we want extreme concurrency.
-											for mIdx, mVal := range menuData {
-												if menuMap, ok := mVal.(map[string]interface{}); ok {
-													if menuIDFloat, ok := menuMap["id"].(float64); ok {
-														menuID := int(menuIDFloat)
-														menuDetails, err := client.GetMenuItems(v.VenueRef, salesAreaID, menuID)
-														if err != nil {
-															// Be tolerant of errors for individual menus
-															fmt.Fprintf(os.Stderr, "\nError fetching items for menu %d (Venue %d): %v\n", menuID, v.VenueRef, err)
-														} else {
-															menuMap["details"] = menuDetails
-															menuData[mIdx] = menuMap
-														}
+				if *menus || *items {
+					if salesAreas, ok := details["salesAreas"].([]interface{}); ok && len(salesAreas) > 0 {
+						if firstArea, ok := salesAreas[0].(map[string]interface{}); ok {
+							if salesAreaIDFloat, ok := firstArea["id"].(float64); ok {
+								salesAreaID := int(salesAreaIDFloat)
+								menuData, err := client.GetMenus(v.VenueRef, salesAreaID)
+								if err != nil {
+									fmt.Fprintf(os.Stderr, "\nError fetching menus for venue %d: %v\n", v.VenueRef, err)
+								} else {
+									if *items {
+										for mIdx, mVal := range menuData {
+											if menuMap, ok := mVal.(map[string]interface{}); ok {
+												if menuIDFloat, ok := menuMap["id"].(float64); ok {
+													menuID := int(menuIDFloat)
+													menuDetails, err := client.GetMenuItems(v.VenueRef, salesAreaID, menuID)
+													if err != nil {
+														fmt.Fprintf(os.Stderr, "\nError fetching items for menu %d (Venue %d): %v\n", menuID, v.VenueRef, err)
+													} else {
+														menuMap["details"] = menuDetails
+														menuData[mIdx] = menuMap
 													}
 												}
 											}
 										}
-										details["menus"] = menuData
 									}
+									details["menus"] = menuData
 								}
 							}
 						}
 					}
+				}
 
-					mu.Lock()
-					detailedVenues = append(detailedVenues, details)
-					reportProgress()
-					mu.Unlock()
-				}(v)
-			}
-			wg.Wait()
-			fmt.Println("\nDone fetching details.")
-			err = writeJSON(*outputFile, detailedVenues)
+				mu.Lock()
+				detailedVenues = append(detailedVenues, details)
+				reportProgress()
+				mu.Unlock()
+			}(v)
+		}
+		wg.Wait()
+		fmt.Fprintln(os.Stderr, "\nDone fetching details.")
+		finalData = detailedVenues
+	}
+
+	// Output Section
+	if *csvOutput {
+		if *outputFile != "" {
+			fmt.Fprintf(os.Stderr, "Successfully fetched %d venues. Writing to %s...\n", len(venues), *outputFile)
+			err = writeCSVToFile(*outputFile, venues) // CSV only supports the flat venue list
 		} else {
-			err = writeJSON(*outputFile, venues)
+			err = writeCSV(os.Stdout, venues)
 		}
 	} else {
-		fmt.Printf("Successfully fetched %d venues. Writing to %s...\n", len(venues), *outputFile)
-		err = writeCSV(*outputFile, venues)
+		// Default to JSON
+		if *outputFile != "" {
+			fmt.Fprintf(os.Stderr, "Successfully fetched %d venues. Writing to %s...\n", len(venues), *outputFile)
+			err = writeJSONToFile(*outputFile, finalData)
+		} else {
+			err = writeJSON(os.Stdout, finalData)
+		}
 	}
 
 	if err != nil {
@@ -169,33 +240,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Done.")
+	if *outputFile != "" {
+		fmt.Fprintln(os.Stderr, "Done.")
+	}
 }
 
-func writeJSON(filename string, data interface{}) error {
+func writeJSON(w io.Writer, data interface{}) error {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(data)
+}
+
+func writeJSONToFile(filename string, data interface{}) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(data)
+	return writeJSON(file, data)
 }
 
-func writeCSV(filename string, venues []jdw.Venue) (err error) {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := file.Close(); cerr != nil && err == nil {
-			err = cerr
-		}
-	}()
-
-	writer := csv.NewWriter(file)
+func writeCSV(w io.Writer, venues []jdw.Venue) error {
+	writer := csv.NewWriter(w)
 	defer writer.Flush()
 
 	header := []string{"Pub Name", "Latitude", "Longitude", "Street", "Locality", "Region", "Postcode", "Telephone", "SourceURL"}
@@ -227,8 +293,16 @@ func writeCSV(filename string, venues []jdw.Venue) (err error) {
 			return err
 		}
 	}
-
 	return nil
+}
+
+func writeCSVToFile(filename string, venues []jdw.Venue) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return writeCSV(file, venues)
 }
 
 func getEnv(key, fallback string) string {

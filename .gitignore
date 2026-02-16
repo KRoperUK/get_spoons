@@ -31,5 +31,8 @@ Thumbs.db
 latest_list.csv
 latest_list.json
 get_spoons
+web/venues.json
+web/venues.csv
+web/data.js
 
 node_modules/

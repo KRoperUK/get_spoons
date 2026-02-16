@@ -1,0 +1,23 @@
+[
+  {
+    "id": 5219,
+    "venueRef": 1470,
+    "name": "The Sir Henry Newbolt",
+    "status": "open",
+    "type": "pub",
+    "isClosed": false,
+    "address": {
+      "line1": "45–47 High Street",
+      "line2": null,
+      "line3": null,
+      "town": "Bilston",
+      "county": "West Midlands",
+      "postcode": "WV14 0EP",
+      "location": {
+        "latitude": 52.564048,
+        "longitude": -2.080305
+      }
+    },
+    "franchise": "jdw"
+  }
+]
