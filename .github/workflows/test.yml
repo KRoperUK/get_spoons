@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  JDW_LIVE_TESTS: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
