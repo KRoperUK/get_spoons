@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.1.1...get_spoons-v1.2.0) (2026-02-16)
+
+
+### Features
+
+* **new-session:** remove expanded data from deployment and add concurrency ([#13](https://github.com/KRoperUK/get_spoons/issues/13)) ([05ef9f1](https://github.com/KRoperUK/get_spoons/commit/05ef9f1fb1cabfdb25c0a9e8e97c4f122584c274))
+
 ## [1.1.1](https://github.com/KRoperUK/get_spoons/compare/get_spoons-v1.1.0...get_spoons-v1.1.1) (2026-02-15)
 
 ### Bug Fixes
