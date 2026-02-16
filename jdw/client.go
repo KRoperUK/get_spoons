@@ -24,6 +24,11 @@ func (c *Client) SetDebug(debug bool) {
 	c.debug = debug
 }
 
+// SetBaseURL sets the base URL for the client. This is useful for testing with mock servers.
+func (c *Client) SetBaseURL(url string) {
+	c.baseURL = url
+}
+
 // GetVenueDetails fetches the full details for a specific venue by ID and returns it as a raw map.
 // This is useful for retrieving fields that are not defined in the Venue struct.
 func (c *Client) GetVenueDetails(id int) (map[string]interface{}, error) {
