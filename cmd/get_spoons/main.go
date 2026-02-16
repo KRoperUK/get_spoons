@@ -212,24 +212,6 @@ func writeJSON(w io.Writer, data interface{}) error {
 	return encoder.Encode(data)
 }
 
-func writeJSONToFile(filename string, data interface{}) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	return writeJSON(file, data)
-}
-
-func writeCSVToFile(filename string, venues []jdw.Venue) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	return writeCSV(file, venues)
-}
-
 func writeCSV(w io.Writer, venues []jdw.Venue) error {
 	writer := csv.NewWriter(w)
 	defer writer.Flush()
