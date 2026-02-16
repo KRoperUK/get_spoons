@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/KRoperUK/get_spoons/compare/v1.5.0...v1.6.0) (2026-02-16)
+
+
+### Features
+
+* search by item ([#25](https://github.com/KRoperUK/get_spoons/issues/25)) ([ef06b22](https://github.com/KRoperUK/get_spoons/commit/ef06b22c0d95984132cb058492b464a8bd623dd8))
+
 ## [1.5.0](https://github.com/KRoperUK/get_spoons/compare/v1.4.0...v1.5.0) (2026-02-16)
 
 
