@@ -280,6 +280,180 @@ func TestRun(t *testing.T) {
 			t.Errorf("Expected CSV header in output, got %s", string(out))
 		}
 	})
+
+	t.Run("ItemSearch", func(t *testing.T) {
+		// Mock server for item search
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "/venues") {
+				// GetVenues
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "The Test Pub"}]}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10/sales-areas/456/menus/789") {
+				// GetMenuItems
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Burger", "price": 10.0}, {"name": "Salad", "price": 8.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10/sales-areas/456/menus") {
+				// GetMenus
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "/venues/10") {
+				// GetVenueDetails
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		// Capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		// Capture stderr
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		err := Run([]string{"-item-search", "burger"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		outStub, _ := io.ReadAll(r)
+		outStr := string(outStub)
+		errStub, _ := io.ReadAll(rErr)
+		errStr := string(errStub)
+
+		// Check output JSON contains "Burger" but NOT "Salad"
+		if !strings.Contains(outStr, "Burger") {
+			t.Errorf("Expected output to contain 'Burger', got: %s", outStr)
+		}
+		if strings.Contains(outStr, "Salad") {
+			t.Errorf("Expected output NOT to contain 'Salad', got: %s", outStr)
+		}
+
+		// Check stderr for filtering message
+		if !strings.Contains(errStr, "Filtered results for items matching \"burger\"") {
+			t.Errorf("Expected stderr to confirm filtering, got: %s", errStr)
+		}
+	})
+
+	t.Run("ItemSearch_MultipleVenues", func(t *testing.T) {
+		// Mock server returning multiple venues
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "venues") {
+				// GetVenues - Return 2 venues
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "Pub One"}, {"id": 2, "venueRef": 20, "name": "Pub Two"}]}`)
+			} else if strings.Contains(r.URL.Path, "789") {
+				// GetMenuItems for Pub One
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Burger", "price": 10.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "menus") {
+				// GetMenus for Pub One
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "venues/10") {
+				// GetVenueDetails for Pub One
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				// Should not be called for Pub Two
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		// Use -item-search "burger"
+		err := Run([]string{"-item-search", "burger"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		// We need to read from r to clear the buffer, even if unused, to avoid pipe issues
+		// However, the error is that it's unused. Let's just discard it.
+		_, _ = io.Copy(io.Discard, r)
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		errBytes, _ := io.ReadAll(rErr)
+		errStr := string(errBytes)
+
+		// Check for the warning message
+		if !strings.Contains(errStr, "Item search is only allowed on an individual venue. Using the first match") {
+			t.Errorf("Expected multiple venue warning, got: %s", errStr)
+		}
+	})
+
+	t.Run("ItemSearch_NoMatches", func(t *testing.T) {
+		// Mock server for item search with no matches
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "venues") {
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 1, "venueRef": 10, "name": "The Test Pub"}]}`)
+			} else if strings.Contains(r.URL.Path, "789") {
+				fmt.Fprint(w, `{"success": true, "data": {"id": 789, "items": [{"name": "Salad", "price": 8.0}]}}`)
+			} else if strings.Contains(r.URL.Path, "menus") {
+				fmt.Fprint(w, `{"success": true, "data": [{"id": 789, "name": "Food Menu"}]}`)
+			} else if strings.Contains(r.URL.Path, "venues/10") {
+				fmt.Fprint(w, `{"success": true, "data": {"id": 1, "venueRef": 10, "salesAreas": [{"id": 456}]}}`)
+			} else {
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		os.Setenv("JDW_API_URL", server.URL)
+		defer os.Unsetenv("JDW_API_URL")
+
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		oldStderr := os.Stderr
+		rErr, wErr, _ := os.Pipe()
+		os.Stderr = wErr
+
+		err := Run([]string{"-item-search", "steak"})
+
+		w.Close()
+		os.Stdout = oldStdout
+		wErr.Close()
+		os.Stderr = oldStderr
+
+		_, _ = io.Copy(io.Discard, r)
+
+		if err != nil {
+			t.Fatalf("Run -item-search failed: %v", err)
+		}
+
+		errBytes, _ := io.ReadAll(rErr)
+		errStr := string(errBytes)
+
+		if !strings.Contains(errStr, "No items matching \"steak\" found") {
+			t.Errorf("Expected no items found message, got: %s", errStr)
+		}
+	})
 }
 
 func TestFilterVenueForItems(t *testing.T) {
